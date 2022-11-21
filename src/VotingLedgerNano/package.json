@@ -1,0 +1,32 @@
+{
+  "name": "ledgernano-xrp-voting",
+  "version": "1.0.0",
+  "description": "",
+  "source": "./src/index.html",
+  "dependencies": {
+    "parcel": "^2.8.0",
+    "@ledgerhq/hw-app-xrp": "^6.27.7",
+    "@ledgerhq/hw-transport-webhid": "^6.27.7",
+    "@ledgerhq/hw-transport-webusb": "^6.27.7",
+    "@ledgerhq/logs": "^6.10.1",
+    "buffer": "^5.7.1",
+    "core-js": "^3.26.1",
+    "crypto-browserify": "^3.12.0",
+    "https-browserify": "^1.0.0",
+    "process": "^0.11.10",
+    "punycode": "^1.4.1",
+    "querystring-es3": "^0.2.1",
+    "ripple-binary-codec": "^1.5.0-beta.2",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "url": "^0.11.0",
+    "xrpl": "^2.6.0-beta.0"
+  },
+  "scripts": {
+    "build": "parcel build",    
+    "start": "parcel"
+  },
+  "alias": {
+    "@ledgerhq/devices": "@ledgerhq/devices/lib-es"
+  }
+}
