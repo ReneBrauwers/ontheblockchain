@@ -1,20 +1,13 @@
-name: Docker Image CI
-
+name: Docker Image ACR Build and Push
 on:
   push:
     branches: [ "main" ]
     paths: ['src/VotingOnTheBlockChain/Voting/*']
-
-
 env:
   IMAGE_NAME: voting-ledgernano
-
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
