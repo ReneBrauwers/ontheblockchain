@@ -19,9 +19,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Get tag
+    - name: Read version from file
       id: tag
-      uses: dawidd6/action-get-tag@v1
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: src/VotingOnTheBlockChain/Voting/version.txt  
     - name: Log into registry
       uses: docker/login-action@v1
       with:
@@ -29,7 +31,7 @@ jobs:
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
     - name: Build & Push
-    - uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v2
       with:
        push: true
        build-args: |
