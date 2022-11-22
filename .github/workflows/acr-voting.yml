@@ -16,7 +16,9 @@ jobs:
       id: tag
       uses: juliangruber/read-file-action@v1
       with:
-        path: src/VotingOnTheBlockChain/Voting/version.txt  
+        path: src/VotingOnTheBlockChain/Voting/version.txt
+    - name: Echo version.txt
+      run: echo "${{ steps.tag.outputs.content }}"
     - name: Log into registry
       uses: docker/login-action@v1
       with:
@@ -28,5 +30,5 @@ jobs:
       with:
        push: true
        build-args: |
-         version=${{ steps.tag.outputs.tag }}
-       tags: ${{ secrets.ACR_ENDPOINT }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+         version=${{ steps.tag.outputs.content}}
+       tags: ${{ secrets.ACR_ENDPOINT }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
