@@ -1,7 +1,8 @@
 import 'core-js/actual';
 import AppXrp from "@ledgerhq/hw-app-xrp";
 import TransportWebHID from "@ledgerhq/hw-transport-webhid";
-import RippleCodec from 'ripple-binary-codec';
+//import RippleCodec from 'ripple-binary-codec';
+import {encode} from 'ripple-binary-codec';
 
 const xrpl = require('xrpl');
 
@@ -135,7 +136,7 @@ const prepared = await client.autofill({
   
   const max_ledger = prepared.LastLedgerSequence
     
-    const transactionBlob = RippleCodec.encode(prepared);
+    const transactionBlob = encode(prepared);
     //return transactionJSON;
     progressLog(`sign transaction on device`,false);     
     var signedTransaction = await xrp.signTransaction("44'/144'/0'/0/0", transactionBlob);

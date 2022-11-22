@@ -1,0 +1,15 @@
+**/bin
+**/obj
+**/node_modules
+**/npm-debug.log
+package-lock.json
+.classpath
+.dockerignore
+.env
+.git
+.gitignore
+.vs
+.vscode
+Dockerfile*
+LICENSE
+README.md
