@@ -1,9 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Config\ProjectSetting.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Azure.Data.Tables" Version="12.7.1" />
+	  <PackageReference Include="Blazored.LocalStorage" Version="4.3.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components" Version="7.0.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
+	  <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+  </ItemGroup>
 
 </Project>

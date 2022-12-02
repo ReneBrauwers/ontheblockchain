@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Transactions;
-using Common.Models;
 using Dapr;
 using Google.Protobuf.Reflection;
+using Common.Models.Config;
 
 namespace VoteScanner.Controllers
 {

@@ -182,14 +182,23 @@ function progressLog(msg,isError)
   try {
    
     //establish connection, if error do a page refresh
-    var xrpAppConnection = await establishConnection();
+    //var xrpAppConnection = await establishConnection();
+      var xrpAppConnection = await TransportWebHID.create().then(transport => new AppXrp(transport)).catch(e => {
+          TransportWebHID.close;          
+          progressLog(e.message, true);  
+          alert("Please ensure that your ledger is connected to your computer via USB. Click ok to rety")
+          location.reload();
+      });
+
+    
     if(!isEmptyObject(xrpAppConnection))
     {
        
         result = await prepareAndSign(xrpAppConnection)
-        .catch(e => {
-            console.log(e.message);
-            progressLog(e.message,true);   
+        .catch(e => {           
+            progressLog(e.message, true);   
+            alert("Please ensure to open the XRP application on your ledger. Click ok to retry")
+            location.reload();
         })
         
         if(result.Status != 'unknown')
