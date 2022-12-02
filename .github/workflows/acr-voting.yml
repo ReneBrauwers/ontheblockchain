@@ -1,4 +1,4 @@
-name: Docker Image ACR Build and Push
+name: CICD Voting Ledger App
 on:
   workflow_dispatch:
   push:
@@ -28,3 +28,20 @@ jobs:
       - run: |
           docker build src/VotingOnTheBlockChain/Voting/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
           docker push servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+    outputs:
+      buildversion: ${{ steps.tag.outputs.content }}          
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}
+      - name: Deploy to containerapp
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az containerapp registry set -n ${{ env.IMAGE_NAME }}-web -g common --server servian.azurecr.io --username  ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }}
+            az containerapp update -n tasksmanager-backend-api -g common --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ jobs.build.outputs.buildversion }}
