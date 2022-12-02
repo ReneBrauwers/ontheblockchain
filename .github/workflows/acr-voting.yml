@@ -43,5 +43,5 @@ jobs:
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n ${{ env.IMAGE_NAME }}-web -g common --server servian.azurecr.io --username  ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }}
-            az containerapp update -n ${{ env.IMAGE_NAME }}-web -g common --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ jobs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000
+            az containerapp registry set -n ${{ env.IMAGE_NAME }} -g common --server servian.azurecr.io --username  ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }}
+            az containerapp update -n ${{ env.IMAGE_NAME }} -g common --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ jobs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000
