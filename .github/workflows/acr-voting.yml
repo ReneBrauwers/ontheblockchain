@@ -20,11 +20,12 @@ jobs:
       - name: Echo version.txt
         run: echo "${{ steps.tag.outputs.content }}"
       - name: Log into registry
-        uses: azure/docker-login@v1
+        uses: azure/docker-login@v1        
         with:
           login-server: servian.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          docker build src/VotingOnTheBlockChain/Voting/* -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+          working-directory: src/VotingOnTheBlockChain/Voting/
+          docker build . -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
           docker push servian.azurecr.io servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
