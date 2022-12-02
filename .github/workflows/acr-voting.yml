@@ -26,6 +26,5 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          working-directory: src/VotingOnTheBlockChain/Voting/
-          docker build . -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+          docker build src/VotingOnTheBlockChain/Voting/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
           docker push servian.azurecr.io servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
