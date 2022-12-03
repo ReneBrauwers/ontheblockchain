@@ -50,7 +50,7 @@ jobs:
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
             --registry-server servian.azurecr.io \
             --registry-username  ${{ secrets.ACR_USERNAME }} \
-            --registry-password ${{ secrets.ACR_PASSWORD }} \           
+            --registry-password secretref:${{ secrets.ACR_PASSWORD }} \           
             --cpu 0.5 \
             --memory 1.0Gi \
             --min-replicas 0 \
