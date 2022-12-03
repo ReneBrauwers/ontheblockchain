@@ -56,6 +56,7 @@ jobs:
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "user: ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }}"
             echo "secret: ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }}"
-            echo "Create containerapp"
+            echo "Create Container App"
+            echo "az containerapp create -n ${{ env.IMAGE_NAME }} -g ${{ env.RESOURCE_GROUP }} --environment ${{ env.CONTAINERAPP_ENV }} --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000 --registry-server servian.azurecr.io --registry-username ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} --registry-password ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }} --ingress external"
             az containerapp create -n ${{ env.IMAGE_NAME }} -g ${{ env.RESOURCE_GROUP }} --environment ${{ env.CONTAINERAPP_ENV }} --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000 --registry-server servian.azurecr.io --registry-username ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} --registry-password ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }} --ingress external
             echo "Completed creation"
