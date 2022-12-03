@@ -61,5 +61,5 @@ jobs:
             echo "Set Container App Registry"
             az containerapp registry set -n  ${{ env.IMAGE_NAME }} -g ${{ env.RESOURCE_GROUP }} --server servian.azurecr.io --username ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} --password ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }}
             echo "Update Container App (final)"
-            az containerapp update -n ${{ env.IMAGE_NAME }} -g ${{ env.RESOURCE_GROUP }} --environment ${{ env.CONTAINERAPP_ENV }} --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000 --ingress external
+            az containerapp update -n ${{ env.IMAGE_NAME }} -g ${{ env.RESOURCE_GROUP }} --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} --cpu 0.5 --memory 1.0Gi --min-replicas 0 --max-replicas 2 --target-port 3000 --ingress external
             echo "Completed creation"
