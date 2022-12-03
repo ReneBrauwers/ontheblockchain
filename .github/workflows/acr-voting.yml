@@ -54,5 +54,5 @@ jobs:
             --registry-server servian.azurecr.io \
             --registry-username ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} \
             --registry-password ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }} \
-            --debug
+            --ingress external
             echo "Completed creation"
