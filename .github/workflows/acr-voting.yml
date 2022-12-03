@@ -6,6 +6,8 @@ on:
     paths: ['src/VotingOnTheBlockChain/Voting/*']
 env:
   IMAGE_NAME: voting-ledgernano
+  CONTAINERAPP_ENV: xrpl-environment
+  LOCATION: westus
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,6 +46,8 @@ jobs:
           inlineScript: |
             echo "Installing containerapp extension"
             az config set extension.use_dynamic_install=yes_without_prompt
+            echo "Create containerapp environment"
+            az containerapp env create -n ${{ env.CONTAINERAPP_ENV }} -g common --location {{ env.LOCATION }}
             echo "Create containerapp"
             az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
