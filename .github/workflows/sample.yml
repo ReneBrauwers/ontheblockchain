@@ -11,7 +11,7 @@ jobs:
           id: echo
           run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}"
         - name: Sleep for 50s
-          if: ${{ success() }}
+          if: ${{ failure() }}
           uses: juliangruber/sleep-action@v1
           with:
            time: 50s   
