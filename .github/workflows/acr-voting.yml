@@ -45,6 +45,9 @@ jobs:
         uses: azure/container-apps-deploy-action@v0
         with:
           imageToDeploy: servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }}
+          acrName: servian
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}          
           containerAppName: ${{ env.IMAGE_NAME }}
           resourceGroup: ${{ env.RESOURCE_GROUP }}  
           containerAppEnvironment: ${{ env.CONTAINERAPP_ENV }}
