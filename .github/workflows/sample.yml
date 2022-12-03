@@ -8,6 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:       
         - name: Echo client id
-          run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientId }}"
+          run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}"
           
       
