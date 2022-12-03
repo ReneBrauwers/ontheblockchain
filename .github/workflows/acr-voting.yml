@@ -46,6 +46,7 @@ jobs:
             az containerapp create \
             --name ${{ env.IMAGE_NAME }} \
             --resource-group common \
+            --environment xrpl-environment \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
             --registry-server servian.azurecr.io \
             --registry-username  ${{ secrets.ACR_USERNAME }} \
