@@ -1,0 +1,13 @@
+name: CICD Voting Ledger App
+on:
+  workflow_dispatch:
+env:
+  IMAGE_NAME: voting-ledgernano
+jobs:
+  display:
+    runs-on: ubuntu-latest
+    steps:       
+        - name: Echo client id
+          run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientId }}"
+          
+      
