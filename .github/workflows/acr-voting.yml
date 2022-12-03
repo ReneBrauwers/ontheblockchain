@@ -6,7 +6,7 @@ on:
     paths: ['src/VotingOnTheBlockChain/Voting/*']
 env:
   IMAGE_NAME: voting-ledgernano
-  CONTAINERAPP_ENV: xrpl-environment
+  CONTAINERAPP_ENV: xrpl-environment-beta
   RESOURCE_GROUP: common
   LOCATION: westus
 jobs:
