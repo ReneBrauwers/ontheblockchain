@@ -10,6 +10,6 @@ jobs:
         - name: Echo all
           run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}"
         - name: Echo client id
-          run: echo "${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.outputs.clientId }}"          
+          run: echo ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }}       
           
       
