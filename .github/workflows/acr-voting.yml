@@ -40,7 +40,8 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}
-      - name: Deploy to containerapp
+      - name: provision container environment
+        id: provision
         uses: azure/CLI@v1
         with:
           inlineScript: |
@@ -48,6 +49,18 @@ jobs:
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp environment"
             az containerapp env create -n ${{ env.CONTAINERAPP_ENV }} -g common --location ${{ env.LOCATION }}
+        continue-on-error: true
+      - name: Sleep for 5m
+        uses: juliangruber/sleep-action@v1
+        if: job.steps.provision.status != failure()
+        with:
+          time: 300s
+      - name: Deploy to containerapp
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            echo "Installing containerapp extension"
+            az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp"
             az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment ${{ env.CONTAINERAPP_ENV }} \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
