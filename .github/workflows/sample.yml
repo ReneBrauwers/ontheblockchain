@@ -13,7 +13,7 @@ jobs:
         - name: Echo client id
           run: echo ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} 
         - name: Echo status
-          run: echo ${{ job.steps.echo.status }}          
+          run: echo ${{ display.steps.echo.status }}          
         - name: Sleep for 5m
           uses: juliangruber/sleep-action@v1
           if: job.steps.echo.status != failure()
