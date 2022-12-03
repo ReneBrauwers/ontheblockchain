@@ -43,6 +43,8 @@ jobs:
         with:
           inlineScript: |
             echo "Installing containerapp extension"
+            echo ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientId }}
+            echo ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientSecret }}
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp"
             az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \
