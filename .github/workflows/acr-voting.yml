@@ -6,7 +6,7 @@ on:
     paths: ['src/VotingOnTheBlockChain/Voting/*']
 env:
   IMAGE_NAME: voting-ledgernano
-  CONTAINERAPP_ENV: xrpl-environment-beta
+  CONTAINERAPP_ENV: xrpl-environment
   LOCATION: westus
 jobs:
   build:
@@ -51,8 +51,8 @@ jobs:
             az containerapp env create -n ${{ env.CONTAINERAPP_ENV }} -g common --location ${{ env.LOCATION }}
         continue-on-error: true
       - name: Sleep for 5m
-        uses: juliangruber/sleep-action@v1
-        if: job.steps.provision.status != failure()
+        if: ${{ success() }}
+        uses: juliangruber/sleep-action@v1        
         with:
           time: 300s
       - name: Deploy to containerapp
