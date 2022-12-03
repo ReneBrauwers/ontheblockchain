@@ -47,9 +47,9 @@ jobs:
             echo "Installing containerapp extension"
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp environment"
-            az containerapp env create -n ${{ env.CONTAINERAPP_ENV }} -g common --location {{ env.LOCATION }}
+            az containerapp env create -n ${{ env.CONTAINERAPP_ENV }} -g common --location ${{ env.LOCATION }}
             echo "Create containerapp"
-            az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \
+            az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment ${{ env.CONTAINERAPP_ENV }} \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
             --cpu 0.5 --memory 1.0Gi \
             --min-replicas 0 --max-replicas 2 \
