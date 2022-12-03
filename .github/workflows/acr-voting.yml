@@ -38,24 +38,17 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN }}
-      - name: Create Container App
-        uses: azure/container-apps-deploy-action@v0
-        with:
-          containerAppName: ${{ env.IMAGE_NAME }}
-          imageToDeploy: servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }}          
-      - name: Update to containerapp
+      - name: Deploy to containerapp
         uses: azure/CLI@v1
         with:
           inlineScript: |
             echo "Installing containerapp extension"
             az config set extension.use_dynamic_install=yes_without_prompt
-            echo "Update containerapp"
-            az containerapp update \
-            --name ${{ env.IMAGE_NAME }} \
-            --resource-group common \
-            --cpu 0.5 \
-            --memory 1.0Gi \
-            --min-replicas 0 \
-            --max-replicas 2 \
+            echo "Create containerapp"
+            az containerapp create --name ${{ env.IMAGE_NAME }} --resource-group common \
+            --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
+            --cpu 0.5 --memory 1.0Gi \
+            --min-replicas 0 --max-replicas 2 \
             --revision-suffix ${{ needs.build.outputs.buildversion }} \
             --target-port 3000
+            echo "Completed creation"
