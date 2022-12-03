@@ -43,8 +43,6 @@ jobs:
         with:
           inlineScript: |
             echo "Installing containerapp extension"
-            echo ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientId }}
-            echo ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientSecret }}
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp"
             az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \
@@ -54,7 +52,7 @@ jobs:
             --revision-suffix ${{ needs.build.outputs.buildversion }} \
             --target-port 3000 \
             --registry-server servian.azurecr.io \
-            --registry-username ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientId }} \
-            --registry-password ${{ secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN.clientSecret }} \
+            --registry-username ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientId }} \
+            --registry-password ${{ fromJSON(secrets.AZURE_CREDENTIALS_SERVIAN_1_MPN).clientSecret }} \
             --debug
             echo "Completed creation"
