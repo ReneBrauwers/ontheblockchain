@@ -44,6 +44,11 @@ jobs:
           inlineScript: |
             echo "Installing containerapp extension"
             az config set extension.use_dynamic_install=yes_without_prompt
+            echo "Set containerapp registry"
+            az containerapp registry set --name ${{ env.IMAGE_NAME }} --resource-group common --environment "xrpl-environment" \
+            --server servian.azurecr.io \
+            --username  ${{ secrets.ACR_USERNAME }} \
+            --password ${{ secrets.ACR_PASSWORD }}            
             echo "Create containerapp"
             az containerapp create --name ${{ env.IMAGE_NAME }} --resource-group common --environment "xrpl-environment" \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
