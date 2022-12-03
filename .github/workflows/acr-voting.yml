@@ -52,5 +52,6 @@ jobs:
             --revision-suffix ${{ needs.build.outputs.buildversion }} \
             --target-port 3000 \
             --registry-server servian.azurecr.io \
-            --registry-identity de7e989b-7a0c-42fa-a5c3-94ae8beb8d8a      
+            --registry-username ${{ secrets.ACR_USERNAME }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }} \
             echo "Completed creation"
