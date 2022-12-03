@@ -45,14 +45,14 @@ jobs:
             echo "Installing containerapp extension"
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "Create containerapp"
-            az containerapp create --name ${{ env.IMAGE_NAME }} --resource-group common --environment "xrpl-environment" \        
+            az containerapp create -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \        
             echo "Set containerapp registry"
-            az containerapp registry set --name ${{ env.IMAGE_NAME }} --resource-group common \
+            az containerapp registry set -n ${{ env.IMAGE_NAME }} -g common \
             --server servian.azurecr.io \
             --username  ${{ secrets.ACR_USERNAME }} \
             --password ${{ secrets.ACR_PASSWORD }}            
             echo "Update containerapp"
-            az containerapp update --name ${{ env.IMAGE_NAME }} --resource-group common --environment "xrpl-environment" \
+            az containerapp update -n ${{ env.IMAGE_NAME }} -g common --environment xrpl-environment \
             --image servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.buildversion }} \
             --cpu 0.5 --memory 1.0Gi \
             --min-replicas 0 --max-replicas 2 \
