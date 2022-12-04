@@ -158,6 +158,7 @@ namespace Common.Services
                                                                         voting.IsLive = true;
                                                                     }
                                                                     voting.VotingAccount = tx.GetProperty("Destination").GetString();
+                                                                    voting.VotingControllerAccount = projectConfigurationSettings.ControllerAccount;
                                                                     //get voting options
                                                                     var votingOptions = tx.GetProperty("Memos").EnumerateArray().AsEnumerable().Skip(1).Select(x => x.GetProperty("Memo").GetProperty("MemoData").GetString().HexToString()).ToArray();
                                                                     voting.VotingOptions = votingOptions;

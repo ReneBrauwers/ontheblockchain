@@ -1,0 +1,54 @@
+﻿@page "/liveresult"
+@using Common.Extensions;
+@inject HttpClient Http
+
+<PageTitle>Live voting results</PageTitle>
+
+<h1>@ProjectName</h1>
+<h5>@VotingId?.HexToString()</h5>
+<small>@VotingStartIndex</small>
+
+<p></p>
+
+
+
+@code {
+    @code {
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "id")]
+        public string? VotingId { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "pn")]
+        public string? ProjectName { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "pt")]
+        public string? ProjectToken { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "si")]
+        public uint? VotingStartIndex { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "ei")]
+        public uint? VotingEndIndex { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "va")]
+        public string? VotingAccount { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "vca")]
+        public string? VotingControllerAccount { get; set; }
+
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+
+   
+}

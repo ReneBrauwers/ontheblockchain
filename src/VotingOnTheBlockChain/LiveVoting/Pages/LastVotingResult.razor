@@ -1,0 +1,61 @@
+﻿@page "/lastresult"
+@using Common.Extensions;
+@inject HttpClient Http
+
+<PageTitle>Last voting results</PageTitle>
+
+<h1>@ProjectName</h1>
+<h5>@VotingId?.HexToString()</h5>
+<small>@VotingStartIndex - @VotingEndIndex</small>
+
+<p></p>
+
+
+
+@code {
+    @code {
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "id")]
+        public string? VotingId { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "pn")]
+        public string? ProjectName { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "pt")]
+        public string? ProjectToken { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "si")]
+        public int? VotingStartIndex { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "ei")]
+        public int? VotingEndIndex { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "va")]
+        public string? VotingAccount { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "vca")]
+        public string? VotingControllerAccount { get; set; }
+
+
+    }
+        // https://localhost:7259/lastresult?
+        // si=76134414&
+        // va=rP5BuBjwJYe7J9uTh27RE8L1SwWPoSnAQy&
+        // vca=&
+        // id=52656170657220566F74653A20446563203173742C2032303232&
+        // ei=76179528&
+        // pn=The%20Reaper&
+        // pt=RPR
+        protected override async Task OnInitializedAsync()
+        {
+
+        }
+
+
+}

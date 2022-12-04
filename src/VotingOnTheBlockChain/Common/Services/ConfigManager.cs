@@ -101,10 +101,11 @@ namespace Common.Services
             {
                 foreach (var project in _projectsConfig)
                 {
-                    if (lastArchivedVotingConfigIndex is null)
+                    if (lastArchivedVotingConfigIndex is null || isArchivedVotingConfigStale)
                     {
                         lastArchivedVotingConfigIndex = new Dictionary<string, uint>();
                     }
+                   
                     lastArchivedVotingConfigIndex.Add(String.Concat(project.ProjectName, "-", project.ProjectToken), 0);
                 }
                 isProjectSettingConfigStale = false;
