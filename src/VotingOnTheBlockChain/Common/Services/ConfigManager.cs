@@ -14,7 +14,7 @@ namespace Common.Services
         private List<ProjectConfig> _projectsConfig;
         private List<OrderBookProject> _orderBookProjectSettings;
         private List<AccountWhitelist> _accountWhitelistSettings;
-        private List<VotingRegistrations> _votingRegistrationConfig;
+        private List<Voting> _votingRegistrationConfig;
 
         public bool isProjectSettingConfigStale { get; private set; }
         public bool isArchivedVotingConfigStale { get; private set; }
@@ -188,7 +188,7 @@ namespace Common.Services
 
         }
 
-        public async Task<List<VotingRegistrations>> GetVotingRegistrations()
+        public async Task<List<Voting>> GetVotingRegistrations()
         {
             bool loadWithDefaultValues = false;
 
@@ -203,7 +203,7 @@ namespace Common.Services
                 try
                 {
                     //check local storage
-                    _votingRegistrationConfig = await _localStorage.GetItemAsync<List<VotingRegistrations>>("votingregistrations", CancellationToken.None);
+                    _votingRegistrationConfig = await _localStorage.GetItemAsync<List<Voting>>("votingregistrations", CancellationToken.None);
 
 
                     if (_votingRegistrationConfig is null) // not null)
@@ -221,7 +221,7 @@ namespace Common.Services
 
                 if (loadWithDefaultValues)
                 {
-                    _votingRegistrationConfig = new List<VotingRegistrations>();
+                    _votingRegistrationConfig = new List<Voting>();
                     _votingRegistrationConfig = await DownloadVotingsRegistrationConfigurationItems();
 
 
@@ -364,7 +364,7 @@ namespace Common.Services
 
 
         }
-        private async Task<List<VotingRegistrations>> DownloadVotingsRegistrationConfigurationItems()
+        private async Task<List<Voting>> DownloadVotingsRegistrationConfigurationItems()
         {
 
             try
@@ -373,10 +373,10 @@ namespace Common.Services
                 {
                     //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/votingregistrations.json");
                     var downloadLink = string.Concat(_uriLocation.ToString(), "/votingregistrations.json");
-                    var result = await client.GetFromJsonAsync<List<VotingRegistrations>>(downloadLink, CancellationToken.None);
+                    var result = await client.GetFromJsonAsync<List<Voting>>(downloadLink, CancellationToken.None);
                     if (result is not null)
                     {
-                        await _localStorage.SetItemAsync<List<VotingRegistrations>>("votingregistrations", result, CancellationToken.None);
+                        await _localStorage.SetItemAsync<List<Voting>>("votingregistrations", result, CancellationToken.None);
                     }
 
                     return result;

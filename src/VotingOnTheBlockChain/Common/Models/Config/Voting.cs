@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace Common.Models.Config
 {
-    public class VotingRegistrations
+    public class Voting
     {
         public string ProjectToken { get; set; }
         public string ProjectName { get; set; }
         public string VotingId { get; set; }
         public string VotingName { get; set; }
+        public string IssuerAccount { get; set; }
         public string VotingAccount { get; set; }
         public string VotingControllerAccount { get; set; }
         public uint VotingStartIndex { get; set; }
