@@ -5,6 +5,7 @@ using Havit.Blazor.Components.Web;
 using Havit.Blazor.Components.Web.Bootstrap;
 using Blazored.LocalStorage;
 using Common.Services;
+using Blazor.Analytics;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -13,10 +14,11 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHxServices();
 builder.Services.AddHxMessenger();
 builder.Services.AddHxMessageBoxHost();
+builder.Services.AddGoogleAnalytics("GTM-52GPBS6");
+
 builder.Services.AddScoped<ConfigManager>();
 builder.Services.AddScoped<VotingManager>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-
 SetHxComponents(); 
 await builder.Build().RunAsync();
 

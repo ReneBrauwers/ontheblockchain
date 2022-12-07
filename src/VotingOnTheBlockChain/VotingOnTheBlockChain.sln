@@ -3,13 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VoteScanner", "VoteScanner\VoteScanner.csproj", "{1F9DF98E-98CD-4ED4-8700-80B01EAE12D5}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{0FEB8DED-322F-4E2F-BD59-DAF78D1491AD}"
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "Voting", "Voting\Voting.njsproj", "{A65DACC2-2D93-45A5-8EB3-DB6A80AD45F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveVoting", "LiveVoting\LiveVoting.csproj", "{69A9FE48-58A8-400C-A770-D80FAE509E91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiveVoting", "LiveVoting\LiveVoting.csproj", "{69A9FE48-58A8-400C-A770-D80FAE509E91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1F9DF98E-98CD-4ED4-8700-80B01EAE12D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1F9DF98E-98CD-4ED4-8700-80B01EAE12D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1F9DF98E-98CD-4ED4-8700-80B01EAE12D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1F9DF98E-98CD-4ED4-8700-80B01EAE12D5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0FEB8DED-322F-4E2F-BD59-DAF78D1491AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0FEB8DED-322F-4E2F-BD59-DAF78D1491AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FEB8DED-322F-4E2F-BD59-DAF78D1491AD}.Release|Any CPU.ActiveCfg = Release|Any CPU

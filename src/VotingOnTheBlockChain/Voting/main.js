@@ -14,7 +14,8 @@ var params = (new URL(document.location)).searchParams;
 const _votingId = params.get("id") ?? '696e7369676874732d6f6e2d7468652d626c6f636b636861696e';
 const _voteCastOn = params.get("vote") ?? '636f6e67726174756c6174696f6e73';
 const _destination = params.get("dest") ?? 'rLrauyao2wWCHgf7qnd3JFPhz4r499HvPv';
-
+const _amount = params.get("amount") ?? '1';
+const _fee = params.get("fee") ?? '12';
 //decode hex to utf8
 const votingId = Buffer.from(_votingId,'hex').toString('utf8');
 const voteCastOn = Buffer.from(_voteCastOn,'hex').toString('utf8');
@@ -113,8 +114,8 @@ async function submitSignedTransaction(xrp, deviceData) {
 const prepared = await client.autofill({
     "TransactionType": "Payment",
     "Account": deviceData.address,
-    "Amount": "1",
-    "Fee": "12",
+    "Amount": _amount,
+    "Fee": _fee,
     "Destination": _destination,
     "SigningPubKey": deviceData.publicKey.toUpperCase(),
     "Flags": 2147483648,   
