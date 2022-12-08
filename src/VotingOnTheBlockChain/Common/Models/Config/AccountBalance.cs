@@ -18,7 +18,7 @@ namespace Common.Models.Config
         /// <summary>
         /// Choice of voter 
         /// </summary>
-        public double Balance { get; set; }
+        public decimal Balance { get; set; }
 
         /// <summary>
         /// Ledger index when vote was registered / received

@@ -216,15 +216,15 @@ else
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, votingEndpoint);
                         request.SetBrowserRequestMode(BrowserRequestMode.Cors);
-                       // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
+                        // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
 
                         var response = await localClient.SendAsync(request,HttpCompletionOption.ResponseContentRead);
                         //if (response.IsSuccessStatusCode)
                         //{
                         //var content = await response.Content.ReadAsStringAsync();
-                            var content = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-                            Console.WriteLine(content.next.always);
-                            await JS.InvokeVoidAsync("redirectExternal", content.next.always, "_blank");
+                        var content = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                        Console.WriteLine(content.next.always);
+                        await JS.InvokeVoidAsync("redirectExternal", content.next.always, "_blank");
                         //}
                     }
                     break;
@@ -234,7 +234,7 @@ else
                     break;
                 }
         }
-        
+
     }
 
     private void SetSigningMethod(ChangeEventArgs val)
@@ -247,9 +247,12 @@ else
 
     private void GetResults(Voting voteInfo)
     {
-        
-        var redirectPage = (voteInfo.IsLive ? "/liveresult" : "/lastresult");
-        //var redirectPage = (voteInfo.IsLive ? "/lastresult" : "/liveresult");
+
+        var redirectPage = "/votingresults";
+        if (voteInfo.VotingEndIndex <= 0)
+        {
+            voteInfo.VotingEndIndex = 0;
+        }
         var queryParams = $"ia={voteInfo.IssuerAccount}&si={voteInfo.VotingStartIndex}&va={voteInfo.VotingAccount}&vca={voteInfo.VotingControllerAccount}&id={voteInfo.VotingId}&ei={voteInfo.VotingEndIndex}&pn={voteInfo.ProjectName}&pt={voteInfo.ProjectToken}";
         _navManager.NavigateTo($"{redirectPage}?{queryParams}");
     }

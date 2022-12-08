@@ -786,7 +786,8 @@ namespace Common.Services
                                                 if(currency.ToLower() == Currency.ToLower())
                                                 {
                                                     var account = jsonResult.RootElement.GetProperty("account").GetString();
-                                                    var accountBalanceInfo = Double.Parse(jsonResult.RootElement.GetProperty("lines")[i].GetProperty("balance").GetString());
+                                                   
+                                                    var accountBalanceInfo = Decimal.Parse(jsonResult.RootElement.GetProperty("lines")[i].GetProperty("balance").GetString(), System.Globalization.NumberStyles.Float);
                                                    
                                                     var ledgerIndex = jsonResult.RootElement.GetProperty("ledger_index").GetUInt32();                                                   
                                                     yield return new AccountBalance()
