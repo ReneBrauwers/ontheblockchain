@@ -3,8 +3,8 @@
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <Name>Voting</Name>
-    <RootNamespace>Voting</RootNamespace>
+    <Name>VotingProxy</Name>
+    <RootNamespace>VotingProxy</RootNamespace>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerLaunchUrl>http://{ServiceIPAddress}</DockerLaunchUrl>

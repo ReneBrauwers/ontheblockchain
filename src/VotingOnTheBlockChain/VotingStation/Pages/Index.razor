@@ -66,7 +66,7 @@ else
             <HxAlert Color="ThemeColor.Danger"><h2>Alpha version, not all functionality is currently working.</h2></HxAlert>
             @if (_lastVotings is not null && _lastVotings.Count > 0)
             {
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 g-3">
                     @foreach (var voting in _lastVotings)
                     {
                         <div class="col">
@@ -97,7 +97,8 @@ else
                                                 </HxDropdownMenu>
                                             </HxDropdownButtonGroup>
                                         </HxButtonGroup>
-
+                                    </div>
+                                        <div class="d-flex float-end mt-3">
                                         @if (voting.IsLive)
                                         {
                                             <small class="text-muted">
@@ -109,15 +110,12 @@ else
                                         }
                                         else
                                         {
-                                            <small class="text-muted">
-                                                voting ended
-
-                                            </small>
+                                            <HxBadge Type="BadgeType.RoundedPill" Color="ThemeColor.Light">ended</HxBadge>
                                         }
 
+                                        </div>
 
-
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>

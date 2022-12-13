@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    paths: ['src/VotingOnTheBlockChain/Voting/*']
+    paths: ['src/VotingOnTheBlockChain/VotingProxy/*']
 env:
   IMAGE_NAME: voting-ledgernano
   CONTAINERAPP_ENV: xrpl-environment-beta
@@ -19,7 +19,7 @@ jobs:
         id: tag
         uses: juliangruber/read-file-action@v1
         with:
-          path: src/VotingOnTheBlockChain/Voting/version.txt
+          path: src/VotingOnTheBlockChain/VotingProxy/version.txt
       - name: Echo version.txt
         run: echo "${{ steps.tag.outputs.content }}"
       - name: Log into registry
@@ -29,7 +29,7 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          docker build src/VotingOnTheBlockChain/Voting/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+          docker build src/VotingOnTheBlockChain/VotingProxy/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
           docker push servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
     outputs:
       buildversion: ${{ steps.tag.outputs.content }}          

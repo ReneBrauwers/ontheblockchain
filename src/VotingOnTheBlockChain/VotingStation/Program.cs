@@ -1,4 +1,4 @@
-using LiveVoting;
+using VotingStation;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Havit.Blazor.Components.Web;

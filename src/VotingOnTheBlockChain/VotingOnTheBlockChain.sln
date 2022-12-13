@@ -5,9 +5,9 @@ VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{0FEB8DED-322F-4E2F-BD59-DAF78D1491AD}"
 EndProject
-Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "Voting", "Voting\Voting.njsproj", "{A65DACC2-2D93-45A5-8EB3-DB6A80AD45F0}"
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "VotingProxy", "VotingProxy\VotingProxy.njsproj", "{A65DACC2-2D93-45A5-8EB3-DB6A80AD45F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiveVoting", "LiveVoting\LiveVoting.csproj", "{69A9FE48-58A8-400C-A770-D80FAE509E91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingStation", "VotingStation\VotingStation.csproj", "{69A9FE48-58A8-400C-A770-D80FAE509E91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
