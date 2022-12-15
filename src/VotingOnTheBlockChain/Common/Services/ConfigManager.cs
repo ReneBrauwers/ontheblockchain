@@ -396,7 +396,7 @@ namespace Common.Services
                 using (var client = new HttpClient())
                 {
                     //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/orderbooksettings.json");
-                    var downloadLink = string.Concat(_uriLocation.ToString(), "/orderbooksettings.json");
+                    var downloadLink = string.Concat(_uriLocation.ToString(), "/orderbooksconfig.json");
                     var result = await client.GetFromJsonAsync<List<OrderBookProject>>(downloadLink, CancellationToken.None);
                     if (result is not null)
                     {

@@ -1,19 +1,650 @@
 ﻿@page "/orderbook"
+@using Common.Extensions;
 
-
+@inject HttpClient Http
+@inject OrderBookManager _orderBook
+@inject ConfigManager _configManager
 <PageTitle>Order Book</PageTitle>
-<section class="text-center container">
-    <div class="row py-lg-5">
-        <div class="col-lg-6 col-md-8 mx-auto">
-            <h1 class="fw-light">Order books</h1>
-            <p class="lead text-muted">
-                This feature will be available in a little while, so check back regularly!
-            </p>
+
+
+@if (_OrderBooks is not null && _OrderBooks.Count > 0)
+{
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card mb-8 rounded-3 shadow-sm">
+                <div class="card-header py-3">
+                    <h4 class="my-0 fw-normal">Selection</h4>
+                </div>
+                <div class="card-body">
+                    <select id="orderBookSelect" class="form-select" aria-label="Select order book to display" @onchange="OnChangeOrderBook">
+
+                        @foreach (var item in _OrderBooks)
+                        {
+
+                            if (@item.Currency == _selectedValue.Currency)
+                            {
+                                <option value="@item.Currency" selected>@item.Currency.HexToString()</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Currency">@item.Currency.HexToString()</option>
+                            }
+                        }
+                    </select>                   
+                    <HxInputCheckbox @bind-Value="_isAdvancedChecked" Label="Advanced config" CssClass="form-label mt-4" />
+                    @if (_isAdvancedChecked)
+                    {
+                        
+                        <label for="sellWalls" class="form-label mt-4">Sell walls:</label>
+                        <div id="sellWalls" class="ms-5 text-sm-start">
+                             <HxInputCheckbox @bind-Value="_sellWallFilterEnabled" Label="Enable" CssClass="form-label mt-3"/>
+                            <HxInputNumber Label="Min Sell transactions (total)"  TValue="int" @bind-Value="_minTotalSellTransactions" CssClass="small mt-3" />
+                            <HxInputNumber Label="Min Sell Amount (total)" TValue="int" @bind-Value="_minTotalSellAmount" CssClass="small mt-3" />
+                            <HxInputNumber Label="Price range difference" Decimals="3" TValue="float" @bind-Value="_priceRangeDiff" CssClass="small mt-3" />
+                            </div>
+                            <label for="orderDepth" class="form-label mt-4">Order depth:</label>
+                        <select id="orderDepth" class="form-select" aria-label="Select depth of oder book to display" @onchange="OnChangeOrderDepth">
+                            @foreach (var item in _OrderBookDepth)
+                            {
+
+                                if (@_selectedOrderBookDepth == item)
+                                {
+                                    <option value="@item" selected>@item</option>
+                                }
+                                else
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            }
+
+                        </select>
+
+                    }
+                    @if(_selectionChanged || _isAdvancedChecked)
+                    {
+                         <div class="col-lg-8 mb-4 mt-4">
+                            <button type="button" class="btn btn-success" @onclick="UpdateOrderBookData">Update</button>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
-</section>
+   
+
+
+}
+
+@if (_loading)
+{
+    <div class="row">
+        <div class="px-4 pt-5 my-5 text-center">
+            <span class="spinner-border text-success" role="status" aria-hidden="true" style="width: 10rem; height: 10rem;"></span>
+            <div class="col-lg-6 mx-auto">
+                <h1 class="display-4 fw-bold">Retrieving @_selectedValue.IssuerName orderbook from XRPL</h1>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-auto m-4">
+        </div>
+    </div>
+    @if (!_sellWallFilterEnabled)
+    {
+        <div class="row">
+            <div class="col-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="text-danger fw-bold m-0">@_selectedValue.IssuerName Sell Orderbook</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm w-auto">
+                                <thead>
+                                    <tr>
+                                        <th scope="col"><small>Action</small></th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableSellOrders("Price"))"><small>Price</small></span>
+                                            <span class="fa @(GetSortStyleSellOrders("Price"))"></span>
+                                        </th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableSellOrders("Volume"))"><small>Sell amount</small></span>
+                                            <span class="fa @(GetSortStyleSellOrders("Volume"))"></span>
+                                        </th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableSellOrders("Total"))"><small>Receive</small></span>
+                                            <span class="fa @(GetSortStyleSellOrders("Total"))"></span>
+                                        </th>
+
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableSellOrders("Account"))"><small>Account</small></span>
+                                            <span class="fa @(GetSortStyleSellOrders("Account"))"></span>
+                                        </th>
+                                        <th scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _sellOrders)
+                                    {
+                                        <tr>
+                                            <th scope="row"><span class="badge text-danger">@item.Side.ToString()</span></th>
+                                            <td>
+                                                @if (@item.Price.ToString("N6").EndsWith("0"))
+                                                {
+                                                    <span class="badge text-success">@item.Price.ToString("N10")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge text-success">@item.Price.ToString("N6")</span>
+                                                }
+                                               
+                                            </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Volume.ToString("N6")&nbsp;@item.Currency.HexToString()</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Total.ToString("N6")&nbsp;XRP</span>
+                                            </td>
+
+                                            <td>
+                                                <a class="badge text-muted" href="@($"accountinfo?acc={item.Account}")" target="_blank">@item.Account.Truncate(20,true)</a>
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="text-success fw-bold m-0">@_selectedValue.IssuerName Buy Orderbook</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm w-auto">
+                                <thead>
+                                    <tr>
+                                        <th scope="col"><small>Action</small></th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableBuyOrders("Price"))"><small>Price</small></span>
+                                            <span class="fa @(GetSortStyleBuyOrders("Price"))"></span>
+                                        </th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableBuyOrders("Total"))"><small>Buy amount</small></span>
+                                            <span class="fa @(GetSortStyleBuyOrders("Total"))"></span>
+                                        </th>
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableBuyOrders("Volume"))"><small>Pay</small></span>
+                                            <span class="fa @(GetSortStyleBuyOrders("Volume"))"></span>
+                                        </th>
+
+                                        <th scope="col">
+                                            <span role="button" class="sort-link" onclick="@(() => SortTableBuyOrders("Account"))"><small>Account</small></span>
+                                            <span class="fa @(GetSortStyleBuyOrders("Account"))"></span>
+                                        </th>
+                                        <th scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _buyOrders)
+                                    {
+                                        <tr>
+                                            <th scope="row"><span class="badge text-success">@item.Side.ToString()</span></th>
+                                            <td>
+                                                @if (@item.Price.ToString("N6").EndsWith("0"))
+                                                {
+                                                 <span class="badge text-success">@item.Price.ToString("N10")</span>   
+                                                }
+                                                else
+                                                {
+                                                <span class="badge text-success">@item.Price.ToString("N6")</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Total.ToString("N6")&nbsp;@item.Currency.HexToString()</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Volume.ToString("N6")&nbsp;XRP</span>
+                                            </td>
+
+                                            <td>
+                                                <a class="badge text-muted" href="@($"accountinfo?acc={item.Account}")" target="_blank">@item.Account.Truncate(20,true)</a>
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+<div class="row">
+    @foreach(var sellwall in _sellWalls)
+            {
+                
+           
+            <div class="col-12 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                            @if (@sellwall.Average(x=>x.Price).ToString("N6").EndsWith("0"))
+                            {
+                                <h6 class="text-danger fw-bold m-0"><a class="badge text-muted" href="@($"accountinfo?acc={sellwall.First().Account}")" target="_blank">@sellwall.First().Account</a> Sell Wall at @sellwall.Average(x=>x.Price).ToString("N13") XRP</h6>
+                            }
+                            else
+                            {
+                                <h6 class="text-danger fw-bold m-0"><a class="badge text-muted" href="@($"accountinfo?acc={sellwall.First().Account}")" target="_blank">@sellwall.First().Account</a> Sell Wall at @sellwall.Average(x=>x.Price).ToString("N6") XRP</h6>
+                            }
+                        </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm w-auto">
+                                <thead>
+                                    <tr>
+                                       
+                                        <th scope="col">
+                                            <small>Price</small>                                           
+                                        </th>
+                                        <th scope="col">
+                                          <small>Sell amount</small>                                         
+                                        </th>
+                                        <th scope="col">
+                                           <small>Receive</small>                                          
+                                        </th>                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in sellwall)
+                                    {
+                                        <tr>                                           
+                                            <td>
+                                                    @if (@item.Price.ToString("N6").EndsWith("0"))
+                                                    {
+                                                        <span class="badge text-danger">@item.Price.ToString("N13")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge text-danger">@item.Price.ToString("N6")</span>
+                                                    }
+                                                </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Volume.ToString("N0")&nbsp;@item.Currency.HexToString()</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge text-muted">@item.Total.ToString("N0")&nbsp;XRP</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3">Selling @sellwall.Sum(x=>x.Volume).ToString("N0")&nbsp;@sellwall.First().Currency.HexToString() for @sellwall.Sum(x=>x.Total).ToString("N0")&nbsp;XRP</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    }
+}
+
+
+
+
 
 
 @code {
+    private bool _loading = true;
+    private bool _selectionChanged = false;
+    private bool _isAdvancedChecked = false;
+    private float _priceRangeDiff = 0.001f;
+    private int _minTotalSellAmount = 75000;
+    private int _minTotalSellTransactions = 1;
+    private bool _sellWallFilterEnabled = false;
+    // private List<AccountOrderBook> _orders = new List<AccountOrderBook>();
+    private List<AccountOrderBook> _buyOrders;
+    private List<AccountOrderBook> _sellOrders;
+    private List<List<AccountOrderBook>> _sellWalls;
 
-}
+    //the table is currently sorted by
+    private bool IsSortedAscendingSellOrders;
+    private bool IsSortedAscendingBuyOrders;
+
+    //We also need a field to tell us which column the table is sorted by.
+    private string CurrentSortColumnSellOrders;
+    private string CurrentSortColumnBuyOrders;
+
+
+
+    private List<OrderBookProject> _OrderBooks;
+    private int[] _OrderBookDepth = { 5, 10, 25, 50, 100, 150, 200 };
+
+    private OrderBookProject _selectedValue = new OrderBookProject();
+    private int _selectedOrderBookDepth { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await _configManager.ClearLocalStore();
+        await Init();
+        await GetOrderBookData();
+
+    }
+
+
+
+    protected async Task Init()
+    {
+        _OrderBooks = await _configManager.GetOrderBookProjectSettings();
+        _OrderBooks = _OrderBooks.Where(x => x.IsActive).ToList();
+        _selectedValue = _OrderBooks.Where(x => x.IsDefault).First();
+        _selectedOrderBookDepth = 50;
+    }
+
+    public async Task OnChangeOrderBook(ChangeEventArgs e)
+    {
+
+        if (e is not null && (!string.IsNullOrWhiteSpace(e.Value?.ToString())))
+        {
+            _selectedValue = _OrderBooks.FirstOrDefault(x => x.Currency == e.Value.ToString());
+            _selectionChanged = true;
+            resetOrderBooks();
+            //if (selectedValue is not null)
+            //{
+            //    await GetOrderBookData(selectedValue.IssuerAccount, selectedValue.Currency);
+            //}
+
+        }
+    }
+
+    public async Task OnChangeAdvancedCheck(ChangeEventArgs e)
+    {
+
+    }
+
+    public async Task OnChangeOrderDepth(ChangeEventArgs e)
+    {
+
+        if (e is not null && (!string.IsNullOrWhiteSpace(e.Value?.ToString())) && int.TryParse(e.Value?.ToString(), out int orderBookDepth))
+        {
+            if (_selectedOrderBookDepth > orderBookDepth)
+            {
+                _selectedOrderBookDepth = orderBookDepth;
+                _sellOrders = _sellOrders.Take(_selectedOrderBookDepth).ToList();
+                _buyOrders = _buyOrders.Take(_selectedOrderBookDepth).ToList();                
+                StateHasChanged();
+            }
+            else
+            {
+                _selectedOrderBookDepth = orderBookDepth;
+                _selectionChanged = true;
+            }
+            //if (selectedValue is not null && _orderBookDepth > 0)
+            //{
+            //    await GetOrderBookData(selectedValue.IssuerAccount, selectedValue.Currency);
+            //}
+
+        }
+    }
+
+    private void resetOrderBooks()
+    {
+        //_orders = new List<AccountOrderBook>();
+        _sellOrders = new List<AccountOrderBook>();
+        _buyOrders = new List<AccountOrderBook>();
+        _sellWalls = new List<List<AccountOrderBook>>();
+        _sellWallFilterEnabled = false;
+    }
+
+    private async Task UpdateOrderBookData(MouseEventArgs e)
+    {
+        await GetOrderBookData();
+    }
+    private async Task GetOrderBookData()
+    {
+        _loading = true;
+        _selectionChanged = false;
+        var tasks = new List<Task<List<AccountOrderBook>>>();
+        //if (_orders is null)
+        //{
+        //    _orders = new List<AccountOrderBook>();
+        //}
+
+
+
+
+
+        if(_sellWallFilterEnabled)
+        {
+            var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
+            var sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell,sellCancellationTokenSource,"wss://xrplcluster.com", _selectedOrderBookDepth);
+            var filteredItems = sellOrders.GroupBy(x => x.Account).Where(grp => grp.Count() >= _minTotalSellTransactions);
+            _sellWalls = new List<List<AccountOrderBook>>();
+            foreach(var groupedAccounts in filteredItems)
+            {
+
+                double  initialCompareprice = 0d;
+                List<AccountOrderBook> sellWall = new List<AccountOrderBook>();
+                AccountOrderBook? previousOrder = null;
+
+                var groupedSellOrders = groupedAccounts.OrderBy(x => x.Price);
+                var itemsLeft = groupedSellOrders.Count();
+                foreach(var sellOrder in groupedSellOrders)
+                {
+                    if(itemsLeft == 0 && previousOrder is null)
+                    {
+                        //finish up
+                    }
+
+
+                    if(previousOrder is null)
+                    {
+                        previousOrder = new AccountOrderBook()
+                            {
+                                Account = sellOrder.Account,
+                                AccountAlias = sellOrder.AccountAlias,
+                                Currency = sellOrder.Currency,
+                                Issuer = sellOrder.Issuer,
+                                OrderSummary = sellOrder.OrderSummary,
+                                Price = sellOrder.Price,
+                                Side = sellOrder.Side,
+                                Total = sellOrder.Total,
+                                Volume = sellOrder.Volume
+                            };
+                        initialCompareprice = previousOrder.Price;
+                        sellWall.Add(previousOrder);
+
+                        if(itemsLeft == 1)
+                        {
+                            _sellWalls.Add(sellWall);    
+                        }
+                    }
+                    else
+                    {
+                        //check if price difference is within given margin
+                        if(sellOrder.Price - initialCompareprice <= _priceRangeDiff)
+                        {
+                            sellWall.Add(sellOrder);
+                            if(itemsLeft == 1)
+                            {
+                                _sellWalls.Add(sellWall);    
+                            }
+                        }
+                        else
+                        {
+                            //reset
+                            initialCompareprice = 0d;
+                            _sellWalls.Add(sellWall);                           
+                            sellWall = new List<AccountOrderBook>();
+
+                            previousOrder = new AccountOrderBook()
+                            {
+                                Account = sellOrder.Account,
+                                AccountAlias = sellOrder.AccountAlias,
+                                Currency = sellOrder.Currency,
+                                Issuer = sellOrder.Issuer,
+                                OrderSummary = sellOrder.OrderSummary,
+                                Price = sellOrder.Price,
+                                Side = sellOrder.Side,
+                                Total = sellOrder.Total,
+                                Volume = sellOrder.Volume
+                            };
+                            initialCompareprice = previousOrder.Price;
+                            sellWall.Add(previousOrder);
+                        }
+                    }
+
+                    itemsLeft--;
+
+
+                }
+            }
+            if(_sellWalls is not null)
+            {
+                //remove sell walls which do not meet the overall criteria
+                List<List<AccountOrderBook>> WallsToRemove = new List<List<AccountOrderBook>>();
+                foreach(var sellWall in _sellWalls)
+                {
+                    if(sellWall.Count() < _minTotalSellTransactions || sellWall.Sum(x=>x.Volume) < _minTotalSellAmount)
+                    {
+                        WallsToRemove.Add(sellWall);
+                        //_sellWalls.Remove(sellWall);
+                    }
+                }
+
+                foreach(var item in WallsToRemove)
+                {
+                    _sellWalls.Remove(item);
+                }
+
+            }
+        }
+        else
+        {
+            var buyCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
+            _buyOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Buy, buyCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
+            var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
+            _sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell,sellCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
+        }
+        _loading = false;
+
+    }
+
+    private string GetSortStyleSellOrders(string columnName)
+    {
+        if (CurrentSortColumnSellOrders != columnName)
+        {
+            return string.Empty;
+        }
+        if (IsSortedAscendingSellOrders)
+        {
+            return "fa-sort-up";
+        }
+        else
+        {
+            return "fa-sort-down";
+        }
+    }
+
+    private string GetSortStyleBuyOrders(string columnName)
+    {
+        if (CurrentSortColumnBuyOrders != columnName)
+        {
+            return string.Empty;
+        }
+        if (IsSortedAscendingBuyOrders)
+        {
+            return "fa-sort-up";
+        }
+        else
+        {
+            return "fa-sort-down";
+        }
+    }
+
+    private void SortTableSellOrders(string columnName)
+    {
+
+        if (columnName != CurrentSortColumnSellOrders)
+        {
+            //We need to force order by descending on the new column
+            _sellOrders = _sellOrders.OrderBy(x => x.GetType()
+                                        .GetProperty(columnName)
+                                        .GetValue(x, null))
+                            .ToList();
+            CurrentSortColumnSellOrders = columnName;
+            IsSortedAscendingSellOrders = true;
+
+        }
+        else //Sorting against same column but in different direction
+        {
+            if (IsSortedAscendingSellOrders)
+            {
+                _sellOrders = _sellOrders.OrderByDescending(x => x.GetType()
+                                                            .GetProperty(columnName)
+                                                            .GetValue(x, null))
+                                .ToList();
+            }
+            else
+            {
+                _sellOrders = _sellOrders.OrderBy(x => x.GetType()
+                                            .GetProperty(columnName)
+                                            .GetValue(x, null))
+                                .ToList();
+            }
+
+            IsSortedAscendingSellOrders = !IsSortedAscendingSellOrders;
+        }
+    }
+
+    private void SortTableBuyOrders(string columnName)
+    {
+
+        if (columnName != CurrentSortColumnBuyOrders)
+        {
+            //We need to force order by descending on the new column
+            _buyOrders = _buyOrders.OrderBy(x => x.GetType()
+                                        .GetProperty(columnName)
+                                        .GetValue(x, null))
+                            .ToList();
+            CurrentSortColumnBuyOrders = columnName;
+            IsSortedAscendingBuyOrders = true;
+
+        }
+        else //Sorting against same column but in different direction
+        {
+            if (IsSortedAscendingBuyOrders)
+            {
+                _buyOrders = _buyOrders.OrderByDescending(x => x.GetType()
+                                                            .GetProperty(columnName)
+                                                            .GetValue(x, null))
+                                .ToList();
+            }
+            else
+            {
+                _buyOrders = _buyOrders.OrderBy(x => x.GetType()
+                                            .GetProperty(columnName)
+                                            .GetValue(x, null))
+                                .ToList();
+            }
+
+            IsSortedAscendingBuyOrders = !IsSortedAscendingBuyOrders;
+        }
+    }
+    }
