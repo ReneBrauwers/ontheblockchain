@@ -230,11 +230,7 @@
             {
                 var optionVotedOn = rawVotingResults.Where(x => x.VoterAddress == balanceResult.Address).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault().VoterChoice;
 
-                //await InvokeAsync(StateHasChanged);
-                // workingVotingResult.VotingWeight = balanceResult.Balance;
-                // workingVotingResult.VotingWeightRegistrationDateTime = balanceResult.SnapShotDateTime;
-                //  workingVotingResult.VotingWeightRegistrationIndex = balanceResult.LedgerIndex;
-
+      
                 //add item to vote
                 var selectedOption = _votingReport.Details.First(x => x.Option == optionVotedOn);
                 if (selectedOption is not null)
