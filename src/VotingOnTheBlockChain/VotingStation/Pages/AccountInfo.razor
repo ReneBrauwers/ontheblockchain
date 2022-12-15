@@ -1,0 +1,241 @@
+﻿@page "/accountinfo"
+@using static Common.Extensions.Enums;
+@inject IConfiguration _appConfig
+@inject AccountOfferManager _accountOfferManager
+@inject AccountInfoManager _accountInfoManager
+@inject ConfigManager _configManager
+
+<PageTitle>Account Information</PageTitle>
+
+
+    <section class="text-center container mb-5">
+        <div class="row py-lg-5">
+            <div class="col-lg-6 col-md-8 mx-auto">
+                <h1 class="fw-light">Account Lookup</h1>
+                <p class="lead text-muted">
+                    Please enter/change the account you want to lookup, below
+                </p>
+                <div class="row">
+                    <div class="col-8">
+                        <HxInputText LabelType="LabelType.Regular" Label="Account address" @bind-Value="_account" LabelCssClass="float-start" />
+                    </div>
+                    <div class="col-auto mt-auto">
+                        <HxButton Text="Lookup" Size="ButtonSize.Small" Color="ThemeColor.Primary" OnClick="async () => await GetAccountInformationAndOrders()" />
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </section>
+    
+
+@if (_accountInformation is not null && (!String.IsNullOrWhiteSpace(_accountInformation.Account)))
+{
+    <section class="container">
+        <div class="py-lg-2">
+            <div class="col-auto mb-2">
+                <div class="card rounded-3 shadow-sm">
+                    <div class="card-header py-3">
+                        <h4 class="my-0 fw-normal">
+                            Details
+                        </h4>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <span>
+                            Account:&emsp;@_accountInformation.Account
+                                @if ((bool)_accountInformation.IsWhitelisted)
+                            {
+                                <em>&emsp;(aka: @_accountInformation.Alias)</em>
+                            }</span>
+                            <span>
+                                Balance:&emsp;@(_accountInformation.Balance) XRP
+                            </span>
+                            </div>
+                        <div class="row mb-2">
+                            <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@($"https://bithomp.com/explorer/{_account}")" target="_blank">View on Bithomp</a></div>
+                            <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@($"https://xrpscan.com/account/{_account}")" target="_blank">View on XRPSCAN</a></div>
+                            <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@($"https://livenet.xrpl.org/accounts/{_account}")" target="_blank">View on Livenet</a></div>
+                            @if ((bool)_accountInformation.IsWhitelisted)
+                            {
+                                <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@_accountInformation.LookupLink" target="_blank">View Twitter feed</a></div>
+                            }
+                        </div>
+@*                        <div class="row mb-2">
+                            <h5>Voting history:</h5>test
+                        </div>*@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@if (_loading)
+{
+    <div class="album py-5 bg-light">
+        <div class="container">
+            <div style="display:grid;place-items:center;margin-top:10%">
+                <span class="loader">Fetching @_dataFetchingText from XRPL</span>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="album py-5 bg-light">
+        <div class="container">
+
+
+            @if (_openOrders is not null && _openOrders.Count > 0)
+            {
+                @foreach (var groupedOrder in _openOrders.GroupBy(x => x.Currency))
+                {
+                    <div class="py-lg-2">
+                        <div class="col-auto mb-2">
+                            <div class="card rounded-3 shadow-sm">
+                                <div class="card-header py-3">
+                                    <h4 class="my-0 fw-normal">@groupedOrder.Key Orders</h4>
+                                </div>
+
+                                <div class="card-body">
+                                    @foreach (var order in groupedOrder)
+                                    {
+                                        @if (order.Side == OrderType.Buy)
+                                        {
+                                            <h4 class="small fw-bold">
+                                                <span class="badge text-bg-success text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
+                                            </h4>
+                                        }
+                                        else
+                                        {
+                                            <h4 class="small fw-bold">
+                                                <span class="badge text-bg-danger text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
+                                            </h4>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                @if (!string.IsNullOrEmpty(_message))
+                {
+                    <div class="row">
+                        <div class="col-auto mb-2">
+                            <div class="alert alert-warning" role="alert">
+                                @_account does not have any orders on the dex
+                            </div>
+                        </div>
+                    </div>
+
+
+                }
+            }
+        </div>
+    </div>
+
+}
+
+
+
+
+
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "acc")]
+    public string _account { get; set; }
+
+    private string _dataFetchingText { get; set; } = string.Empty;
+    // private string _accountAlias { get; set; } = string.Empty;
+    // private string _accountLookupLink { get; set; } = string.Empty;
+
+    // private bool _accountIsWhitelisted = false;
+    private bool _loading = false;
+    private string _message = "";
+    private List<AccountOrderBook> _openOrders;
+    private AccountInformation _accountInformation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(_account))
+        {
+            await GetAccountInformationAndOrders();
+        }
+
+    }
+
+
+    private async Task GetAccountInformationAndOrders()
+    {
+        _accountInformation = new();
+        _openOrders = new();
+         
+
+        if (!string.IsNullOrWhiteSpace(_account))
+        {
+            //init
+            _dataFetchingText = "Basic account information";
+            var accountAlias = string.Empty;
+            var accountLookupLink = string.Empty;
+            var accountIsWhitelisted = false;
+
+            _loading = true;
+            var whitelist = await _configManager.GetAccountWhitelist();
+            if (whitelist.Any(x => x.Address == _account))
+            {
+                accountAlias = whitelist.FirstOrDefault(x => x.Address == _account).FriendlyAddress;
+                accountLookupLink = whitelist.FirstOrDefault(x => x.Address == _account).Link;
+                accountIsWhitelisted = true;
+
+            }
+
+            CancellationTokenSource ctxInfo = new CancellationTokenSource(new TimeSpan(0, 0, 20));
+
+
+            //get account info
+            _accountInformation = await _accountInfoManager.GetAccountInformation(_account, 0, ctxInfo, "wss://xrplcluster.com");
+            if (_accountInformation is null || String.IsNullOrWhiteSpace(_accountInformation.Account))
+            {
+                _message = string.Concat("Account ", _account, " not found!");
+            }
+            else
+            {
+                _accountInformation.Alias = accountAlias;
+                _accountInformation.LookupLink = accountLookupLink;
+                _accountInformation.IsWhitelisted = accountIsWhitelisted;
+                _accountInformation.Balance = _accountInformation.Balance * (Decimal.Parse(_appConfig.GetValue<string>("dropvalue")));
+               
+
+
+                CancellationTokenSource ctxOrders = new CancellationTokenSource(new TimeSpan(0, 0, 20));
+                _dataFetchingText = $"{_accountInformation.Account} open orders";
+                StateHasChanged();
+                _openOrders = await _accountOfferManager.GetAccountOrder(_account, 0, ctxOrders, "wss://xrplcluster.com");
+                if (_openOrders is null || _openOrders.Count == 0)
+                {
+                    _message = string.Concat("no orders found on the dex for ", _account);
+                }
+                else
+                {
+                    _message = string.Empty;
+                }
+            }
+            _loading = false;
+        }
+        StateHasChanged();
+
+
+
+    }
+
+
+}
+
+

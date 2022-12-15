@@ -7,7 +7,7 @@ using System.Net.Http.Json;
 
 namespace Common.Services
 {
-    public class ConfigManager
+    public sealed class ConfigManager
     {
         protected readonly IConfiguration _configuration;
         protected readonly ILocalStorageService _localStorage;

@@ -35,7 +35,7 @@ a, .btn-link {
 }*/
 
 
-.bd-placeholder-img {
+/*.bd-placeholder-img {
     font-size: 1.125rem;
     text-anchor: middle;
     -webkit-user-select: none;
@@ -84,14 +84,14 @@ a, .btn-link {
         text-align: center;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-    }
+    }*/
 
 
 
-/*body {
+body {
     font-family: 'Roboto', sans-serif;
 }
-*/
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

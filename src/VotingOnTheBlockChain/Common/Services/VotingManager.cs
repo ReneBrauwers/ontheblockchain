@@ -15,7 +15,7 @@ using Common.Models.Report;
 
 namespace Common.Services
 {
-    public class VotingManager
+    public sealed class VotingManager
     {
       
    

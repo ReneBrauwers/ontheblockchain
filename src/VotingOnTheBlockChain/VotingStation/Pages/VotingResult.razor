@@ -272,7 +272,7 @@
     {
         var details = _votingReport.Details.Where(x => x.Option == option).FirstOrDefault();
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        var templateHtml = "<h4 class='small fw-bold'><span class='badge text-success text-xxl-start'></span>&emsp;<span><small><a class='link-success' href='https://xrpscan.com/account/#accountid#' target='_blank'>#accountid#</a></small></span>&emsp;<span class='badge text-success float-end'>#totalvotes# votes</span>";
+        var templateHtml = "<h4 class='small fw-bold'><span class='badge text-success text-xxl-start'></span>&emsp;<span><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountid#</a></small></span>&emsp;<span class='badge text-success float-end'>#totalvotes# votes</span>";
         if (details is not null)
         {
             foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.Balance))
