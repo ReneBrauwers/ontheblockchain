@@ -11,23 +11,22 @@
 <section class="text-center container">
     <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto">
-            <h1 class="fw-light">@projectName
-             
+            <div class="row">
+                <div class="col"><h1 class="fw-light">@projectName</h1></div>
                 @if (_isLive)
                 {
-                    <span>
-                    <small class="text-muted">
+                    <div class="col-auto">
+                        <small class="text-muted">
                             &nbsp;LIVE&nbsp;
-                        <span style="display: inline-block; margin-right: 0.5rem;" class="float">
-                            <HxSpinner Size="SpinnerSize.Small" Type="SpinnerType.Grow" Color="ThemeColor.Danger" />
-                        </span>
+                            <span style="display: inline-block; margin-right: 0.5rem;" class="float-start">
+                                <HxSpinner Size="SpinnerSize.Small" Type="SpinnerType.Grow" Color="ThemeColor.Danger" />
+                            </span>
                         </small>
-                    </span>
+                    </div>
                 }
 
-                   
-                
-            </h1>
+            </div>
+
             <p class="lead text-muted">
                 @votingId?.HexToString()
             </p><p>
@@ -69,8 +68,18 @@
                     <div class="col-lg-6 mb-4">
                         <div class="card rounded-3 shadow-sm">
                             <div class="card-header py-3">
-                                <h4 class="my-0 fw-normal">Voting results</h4>
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="my-0 fw-normal">Voting results</h4>
+                                    </div>
+                                    @if (_isLive)
+                                    {
+                                        <div class="col-auto">
+                                            <button class="btn btn-sm btn-warning position-relative float" type="button" @onclick="@Refresh">Refresh results</button>
+                                        </div>
+                                    }
 
+                                </div>
                             </div>
                             <div class="card-body">
                                 @{
@@ -91,7 +100,21 @@
                                             <div class="collapse multi-collapse" id="@collapseId">
                                                 <div class="card card-body">
                                                     <!-- content-->
-                                                    @((MarkupString)showDetailsAsHtml(resultItem.Option))
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th scope="col"><small>Account</small></th>
+                                                                    <th scope="col"><small>Last voted</small></th>
+                                                                    <th scope="col"><small>Actual Votes</small></th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @((MarkupString)showDetailsAsHtml(resultItem.Option))
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+
 
                                                     <!-- end content-->
                                                 </div>
@@ -182,8 +205,12 @@
     private bool _latestVotingFetched = false;
     private bool _isLive = false;
 
+    //private DateTimeOffset localTime;
+    //private TimeSpan? userTime;
+
     protected override async Task OnInitializedAsync()
     {
+
         _latestVotingFetched = false;
         StateHasChanged();
         _votingReport.ProjectToken = projectToken;
@@ -198,6 +225,13 @@
         _latestVotingFetched = true;
         StateHasChanged();
 
+    }
+
+
+
+    private void Refresh()
+    {
+        _navManager.NavigateTo(_navManager.Uri, forceLoad: true);
     }
 
     private async Task GetLastVotingDetails()
@@ -235,7 +269,8 @@
     {
 
         CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
-        List<string> accounts = new();
+        Dictionary<string, DateTime> accounts = new Dictionary<string, DateTime>();
+        //List<string> accounts = new();
         List<VotingResults> rawVotingResults = new();
 
         if (_isLive)
@@ -243,7 +278,24 @@
             await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _endPoint))
             {
                 rawVotingResults.Add(result);
-                accounts.Add(result.VoterAddress);
+                //if(accounts.ContainsKey(result.VoterAddress))
+                //{
+                //if timestamp is newer, do an update
+                if (accounts.TryGetValue(result.VoterAddress, out DateTime votedDateTimeStamp))
+                {
+                    if (votedDateTimeStamp < result.VoteRegistrationDateTime)
+                    {
+                        //update
+                        accounts[result.VoterAddress] = result.VoteRegistrationDateTime;
+                    }
+                }
+                else
+                {
+                    //just add
+                    accounts.Add(result.VoterAddress, result.VoteRegistrationDateTime);
+                }
+                //}
+                //accounts.Add(result.VoterAddress);
             }
         }
         else
@@ -251,14 +303,28 @@
             await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
             {
                 rawVotingResults.Add(result);
-                accounts.Add(result.VoterAddress);
+                //if timestamp is newer, do an update
+                if (accounts.TryGetValue(result.VoterAddress, out DateTime votedDateTimeStamp))
+                {
+                    if (votedDateTimeStamp < result.VoteRegistrationDateTime)
+                    {
+                        //update
+                        accounts[result.VoterAddress] = result.VoteRegistrationDateTime;
+                    }
+                }
+                else
+                {
+                    //just add
+                    accounts.Add(result.VoterAddress, result.VoteRegistrationDateTime);
+                }
+                //accounts.Add(result.VoterAddress);
             }
         }
 
         //Get ledger information
         //get account balances
         var ledgerCancellationToken = new CancellationTokenSource(new TimeSpan(0, 0, 20)); //5 minutes
-        if(_isLive)
+        if (_isLive)
         {
             //get currenct
             _latestLedgerIndex = await _ledgerManager.GetLastLedgerIndex(ledgerCancellationToken, _endPoint);
@@ -266,21 +332,27 @@
         else
         {
             //get last voting index
-            _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken,(uint)votingEndIndex ,_endPoint);
+            _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken, (uint)votingEndIndex, _endPoint);
         }
 
 
         //get account balances
         ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
-                                                                  
+
 
         var accountsWithVotes = 0;
-        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Distinct().ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex , projectToken, ctx, _endPoint))
+        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Keys.ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, ctx, _endPoint))
         {
             if (balanceResult.Balance > 0)
             {
                 var optionVotedOn = rawVotingResults.Where(x => x.VoterAddress == balanceResult.Address).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault().VoterChoice;
 
+                //now update the last know voting date/time (should allign with the ledger index)
+                if (accounts.TryGetValue(balanceResult.Address, out DateTime lastVoteRecordedTimeStamp))
+                {
+
+                    balanceResult.LastRecordedVoteDateTime = lastVoteRecordedTimeStamp.ToLocalTime();
+                }
 
                 //add item to vote
                 var selectedOption = _votingReport.Details.First(x => x.Option == optionVotedOn);
@@ -313,17 +385,18 @@
 
     }
 
-    
+
 
 
     private string showDetailsAsHtml(string option)
     {
         var details = _votingReport.Details.Where(x => x.Option == option).FirstOrDefault();
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        var templateHtml = "<h4 class='small fw-bold'><span class='badge text-success text-xxl-start'></span>&emsp;<span><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountid#</a></small></span>&emsp;<span class='badge text-success float-end'>#totalvotes# votes</span>";
+        //var templateHtml = "<h4 class='small fw-bold'><span class='badge text-success text-xxl-start'></span>&emsp;<span><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountid#</a>&nbsp;last voted on #votedAt#</small></span>&emsp;<span class='badge text-success float-end'>#totalvotes# votes</span>";
+        var templateHtml = "<tr><th scope='row'><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountid#</a></small></th><td><small>#votedAt#</small></td><td><small>#totalvotes#</small></td></tr>";
         if (details is not null)
         {
-            foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.Balance))
+            foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.LastRecordedVoteDateTime))
             {
                 string balance = string.Empty;
                 if (item.Balance < 1)
@@ -335,7 +408,8 @@
                     balance = item.Balance.ToString("N0");
                 }
 
-                sb.Append(templateHtml.Replace("#accountid#", item.Address).Replace("#totalvotes#", balance));
+
+                sb.Append(templateHtml.Replace("#accountid#", item.Address.Truncate(12, true)).Replace("#totalvotes#", balance).Replace("#votedAt#", item.LastRecordedVoteDateTime?.ToString("g")));
             }
 
         }

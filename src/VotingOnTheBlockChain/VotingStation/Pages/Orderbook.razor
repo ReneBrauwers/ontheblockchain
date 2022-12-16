@@ -31,13 +31,13 @@
                             }
                         }
                     </select>                   
-                    <HxInputCheckbox @bind-Value="_isAdvancedChecked" Label="Advanced config" CssClass="form-label mt-4" />
+                    <HxCheckbox @bind-Value="_isAdvancedChecked" Label="Advanced config" CssClass="form-label mt-4" />
                     @if (_isAdvancedChecked)
                     {
                         
                         <label for="sellWalls" class="form-label mt-4">Sell walls:</label>
                         <div id="sellWalls" class="ms-5 text-sm-start">
-                             <HxInputCheckbox @bind-Value="_sellWallFilterEnabled" Label="Enable" CssClass="form-label mt-3"/>
+                             <HxInputCheckbox @bind-Value="_sellWallFilterEnabled" Text="Enable" CssClass="form-label mt-3"/>
                             <HxInputNumber Label="Min Sell transactions (total)"  TValue="int" @bind-Value="_minTotalSellTransactions" CssClass="small mt-3" />
                             <HxInputNumber Label="Min Sell Amount (total)" TValue="int" @bind-Value="_minTotalSellAmount" CssClass="small mt-3" />
                             <HxInputNumber Label="Price range difference" Decimals="13" TValue="float" @bind-Value="_priceRangeDiff" CssClass="small mt-3" />

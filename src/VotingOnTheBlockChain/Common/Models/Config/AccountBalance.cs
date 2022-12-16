@@ -30,6 +30,11 @@ namespace Common.Models.Config
         /// </summary>
         public UInt32 LedgerIndex { get; set; }
 
-  
+        /// <summary>
+        /// Datetime when the vote was registered
+        /// </summary>
+        public DateTime? LastRecordedVoteDateTime { get; set; }
+
+
     }
 }

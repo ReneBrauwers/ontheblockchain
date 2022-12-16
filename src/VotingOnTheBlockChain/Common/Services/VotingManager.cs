@@ -796,6 +796,7 @@ namespace Common.Services
                                                         Balance = accountBalanceInfo,
                                                         Currency = currency,
                                                         LedgerIndex = ledgerIndex
+                                                        
                                                        
                                                     };
                                                 }
