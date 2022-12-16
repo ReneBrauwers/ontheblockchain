@@ -46,6 +46,7 @@
                 @if (_latestLedgerIndex.ledgerIndex > 0)
                 {
                     <span class="badge rounded-pill text-bg-light  mb-3">Snapshot datetime (UTC): @_latestLedgerIndex.ledgerCloseTimeUTC.ToString("F")</span>
+                    <span class="badge rounded-pill text-bg-light  mb-3">Snapshot datetime (local): @_latestLedgerIndex.ledgerCloseTimeUTC.ToLocalTime().ToString("F")</span>
                 }
             </p>
         </div>
