@@ -73,8 +73,12 @@
                                     <div class="col">
                                         <h4 class="my-0 fw-normal">Voting results</h4>
                                     </div>
+                                    <div class="col-auto">
+                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
+                                    </div>
                                     @if (_isLive)
                                     {
+                                        
                                         <div class="col-auto">
                                             <button class="btn btn-sm btn-warning position-relative float" type="button" @onclick="@Refresh">Refresh results</button>
                                         </div>
@@ -107,7 +111,7 @@
                                                                 <tr>
                                                                     <th scope="col"><small>Account</small></th>
                                                                     <th scope="col"><small>Last voted</small></th>
-                                                                    <th scope="col"><small>Actual Votes</small></th>
+                                                                    <th scope="col"><small>Actual votes</small></th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -206,8 +210,8 @@
     private bool _latestVotingFetched = false;
     private bool _isLive = false;
 
-    //private DateTimeOffset localTime;
-    //private TimeSpan? userTime;
+    //the table is currently sorted by
+    private bool _sortDetailsByVotes = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,7 +232,17 @@
 
     }
 
-
+    private void ChangeSortOrder()
+    {
+        if (_sortDetailsByVotes)
+        {
+            _sortDetailsByVotes = false;
+        }
+        else
+        {
+            _sortDetailsByVotes = true;
+        }
+    }
 
     private void Refresh()
     {
@@ -397,7 +411,11 @@
         var templateHtml = "<tr><th scope='row'><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountidtrunc#</a></small></th><td><small>#votedAt#</small></td><td><small>#totalvotes#</small></td></tr>";
         if (details is not null)
         {
-            foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.LastRecordedVoteDateTime))
+            
+            foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.GetType()
+                                                            .GetProperty((_sortDetailsByVotes ? "Balance" : "LastRecordedVoteDateTime"))
+                                                            .GetValue(x, null))
+                                .ToList()) //.OrderByDescending(x => x.Balance))
             {
                 string balance = string.Empty;
                 if (item.Balance < 1)
@@ -425,6 +443,10 @@
 
 
     }
+
+ 
+
+   
 
 
 }
