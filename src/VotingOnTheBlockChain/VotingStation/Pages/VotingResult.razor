@@ -73,9 +73,7 @@
                                     <div class="col">
                                         <h4 class="my-0 fw-normal">Voting results</h4>
                                     </div>
-                                    <div class="col-auto">
-                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
-                                    </div>
+
                                     @if (_isLive)
                                     {
                                         
@@ -105,6 +103,9 @@
                                             <div class="collapse multi-collapse" id="@collapseId">
                                                 <div class="card card-body">
                                                     <!-- content-->
+                                                                                        <div class="col-auto">
+                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
+                                    </div>
                                                     <div class="table-responsive">
                                                         <table class="table table-sm">
                                                             <thead>
