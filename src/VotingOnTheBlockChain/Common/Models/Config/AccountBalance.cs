@@ -30,5 +30,6 @@ namespace Common.Models.Config
         /// </summary>
         public UInt32 LedgerIndex { get; set; }
 
+  
     }
 }

@@ -1,24 +1,53 @@
 ﻿@page "/votingresults"
 @using Common.Extensions;
+
 @inject HttpClient Http
 @inject VotingManager _votingManager
 @inject NavigationManager _navManager
+@inject LedgerManager _ledgerManager
 @inject IJSRuntime JS
 
 <PageTitle>Last voting results</PageTitle>
 <section class="text-center container">
     <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto">
-            <h1 class="fw-light">@projectName</h1>
+            <h1 class="fw-light">@projectName
+             
+                @if (_isLive)
+                {
+                    <span>
+                    <small class="text-muted">
+                            &nbsp;LIVE&nbsp;
+                        <span style="display: inline-block; margin-right: 0.5rem;" class="float">
+                            <HxSpinner Size="SpinnerSize.Small" Type="SpinnerType.Grow" Color="ThemeColor.Danger" />
+                        </span>
+                        </small>
+                    </span>
+                }
+
+                   
+                
+            </h1>
             <p class="lead text-muted">
                 @votingId?.HexToString()
             </p><p>
                 <span class="badge rounded-pill text-bg-light  mb-3">Ledger index start: @votingStartIndex?.ToString("N0")</span>
-                <span class="badge rounded-pill text-bg-light  mb-3">Ledger index end: @votingEndIndex?.ToString("N0")</span>
+                @if (!_isLive)
+                {
+                    <span class="badge rounded-pill text-bg-light  mb-3">Ledger index end: @votingEndIndex?.ToString("N0")</span>
+                }
+                else
+                {
+                    <spann class="badge rounded-pill text-bg-light mb-3">Ledger index end: ongoing</spann>
+                }
                 <span class="badge rounded-pill text-bg-light  mb-3">Total account votes: @_votingReport?.TotalAccountsVoted.ToString("N0")</span>
                 <span class="badge rounded-pill text-bg-light  mb-3">Total unique account votes: @_votingReport?.UniqueAccountsVoted</span>
                 <span class="badge rounded-pill text-bg-light  mb-3">Total valid and unique account votes: @_votingReport?.UniqueValidAccountsVoted.ToString("N0")</span>
                 <span class="badge rounded-pill text-bg-light  mb-3">Total votes cast: @_votingReport?.TotalVotesCast.ToString("N0")</span>
+                @if (_latestLedgerIndex.ledgerIndex > 0)
+                {
+                    <span class="badge rounded-pill text-bg-light  mb-3">Snapshot datetime (UTC): @_latestLedgerIndex.ledgerCloseTimeUTC.ToString("F")</span>
+                }
             </p>
         </div>
     </div>
@@ -27,83 +56,83 @@
     <div class="container">
         @if (!_latestVotingFetched)
         {
-                <div style="display:grid;place-items:center;margin-top:10%" class="mb-3">
-                    <span class="loader">Fetching votes from XRPL</span>
-                </div>
+            <div style="display:grid;place-items:center;margin-top:10%" class="mb-3">
+                <span class="loader">Fetching votes from XRPL</span>
+            </div>
 
         }
         else
         {
             @if (_votingReport is not null && _votingReport.Details is not null && _votingReport.Details.Count > 0)
             {
-                        <div class="row">
-                            <div class="col-lg-6 mb-4">
-                                <div class="card rounded-3 shadow-sm">
-                                    <div class="card-header py-3">
-                                        <h4 class="my-0 fw-normal">Voting results</h4>
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <h4 class="my-0 fw-normal">Voting results</h4>
 
-                                    </div>
-                                    <div class="card-body">
+                            </div>
+                            <div class="card-body">
                                 @{
                                     int position = 0;
                                     foreach (var resultItem in _votingReport.Details.OrderByDescending(x => x.PercentageVote))
                                     {
                                         position++;
                                         var collapseId = string.Concat("rv", Guid.NewGuid());
-                                                    <h4 class="small fw-bold">
-                                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@position.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalVotes.ToString("N0") votes</em></span>
-                                                        <button class="btn btn-sm btn-outline-dark position-relative float-end m-2" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">Details</button>
-                                                    </h4>
-                                                    <div class="progress mb-4">
-                                                        <div class="progress-bar bg-danger" aria-valuenow="@resultItem.PercentageVote.ToString("N0")" aria-valuemin="0" aria-valuemax="100" style="width: @resultItem.PercentageVote.ToString("N2")%;" data-bs-toggle="tooltip" data-bs-placement="top" title="@resultItem.PercentageVote.ToString("N2")%"><span class="visually-hidden">@resultItem.PercentageVote.ToString("N2")%</span></div>
-                                                        &nbsp;<em class="text-black">@resultItem.PercentageVote.ToString("N2")%</em>
-                                                    </div>
-                                                    <div class="col">
-                                                        <div class="collapse multi-collapse" id="@collapseId">
-                                                            <div class="card card-body">
-                                                                <!-- content-->
+                                        <h4 class="small fw-bold">
+                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@position.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalVotes.ToString("N0") votes</em></span>
+                                            <button class="btn btn-sm btn-outline-dark position-relative float-end m-2" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">Details</button>
+                                        </h4>
+                                        <div class="progress mb-4">
+                                            <div class="progress-bar bg-danger" aria-valuenow="@resultItem.PercentageVote.ToString("N0")" aria-valuemin="0" aria-valuemax="100" style="width: @resultItem.PercentageVote.ToString("N2")%;" data-bs-toggle="tooltip" data-bs-placement="top" title="@resultItem.PercentageVote.ToString("N2")%"><span class="visually-hidden">@resultItem.PercentageVote.ToString("N2")%</span></div>
+                                            &nbsp;<em class="text-black">@resultItem.PercentageVote.ToString("N2")%</em>
+                                        </div>
+                                        <div class="col">
+                                            <div class="collapse multi-collapse" id="@collapseId">
+                                                <div class="card card-body">
+                                                    <!-- content-->
                                                     @((MarkupString)showDetailsAsHtml(resultItem.Option))
 
-                                                                <!-- end content-->
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <!-- end content-->
+                                                </div>
+                                            </div>
+                                        </div>
                                     }
                                 }
 
 
-                                    </div>
-                                </div>
                             </div>
-                            <div class="col-lg-6 mb-4">
-                                <div class="card rounded-3 shadow-sm">
-                                    <div class="card-header py-3">
-                                        <h4 class="my-0 fw-normal">Popular vote results</h4>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <h4 class="my-0 fw-normal">Popular vote results</h4>
 
-                                    </div>
-                                    <div class="card-body">
+                            </div>
+                            <div class="card-body">
                                 @{
                                     int positionpv = 0;
                                     @foreach (var resultItem in _votingReport.Details.OrderByDescending(x => x.TotalValidAccountsVoted))
                                     {
                                         positionpv++;
-                                                        <h4 class="small fw-bold">
-                                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@positionpv.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalValidAccountsVoted.ToString("N0") votes</em></span>
+                                        <h4 class="small fw-bold">
+                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@positionpv.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalValidAccountsVoted.ToString("N0") votes</em></span>
 
-                                                    </h4>
-                                                    <div class="progress mb-4">
-                                                            <div class="progress-bar bg-danger" aria-valuenow="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N0"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%"><span class="visually-hidden">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</span></div>
-                                                            &nbsp;<em class="text-black">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</em>
-                                                    </div>
+                                        </h4>
+                                        <div class="progress mb-4">
+                                            <div class="progress-bar bg-danger" aria-valuenow="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N0"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%"><span class="visually-hidden">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</span></div>
+                                            &nbsp;<em class="text-black">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</em>
+                                        </div>
 
                                     }
                                 }
 
 
-                                    </div>
-                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
             }
         }
 
@@ -147,9 +176,11 @@
 
 
     private string _endPoint = "wss://xrplcluster.com/";
+    private Ledger _latestLedgerIndex = new Ledger();
     private List<VotingResults> _votingResultsActual = new();
     private VotingResultReport _votingReport = new();
     private bool _latestVotingFetched = false;
+    private bool _isLive = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,7 +191,7 @@
         _votingReport.LedgerIndex = (uint)votingEndIndex;
         _votingReport.VotingId = votingId;
         _votingReport.VotingName = votingId?.HexToString();
-
+        _isLive = (votingEndIndex == 0);
         await GetLastVotingDetails();
         await GetResultsFromXrpl();
 
@@ -207,19 +238,44 @@
         List<string> accounts = new();
         List<VotingResults> rawVotingResults = new();
 
-
-        await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
+        if (_isLive)
         {
-            rawVotingResults.Add(result);
-            accounts.Add(result.VoterAddress);
+            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _endPoint))
+            {
+                rawVotingResults.Add(result);
+                accounts.Add(result.VoterAddress);
+            }
+        }
+        else
+        {
+            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
+            {
+                rawVotingResults.Add(result);
+                accounts.Add(result.VoterAddress);
+            }
+        }
+
+        //Get ledger information
+        //get account balances
+        var ledgerCancellationToken = new CancellationTokenSource(new TimeSpan(0, 0, 20)); //5 minutes
+        if(_isLive)
+        {
+            //get currenct
+            _latestLedgerIndex = await _ledgerManager.GetLastLedgerIndex(ledgerCancellationToken, _endPoint);
+        }
+        else
+        {
+            //get last voting index
+            _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken,(uint)votingEndIndex ,_endPoint);
         }
 
 
         //get account balances
         ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
-                                                                  //List<VotingResults> workingVotingResults = new List<VotingResults>();
+                                                                  
+
         var accountsWithVotes = 0;
-        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Distinct().ToList(), issuerAccount, (UInt32)votingEndIndex, projectToken, ctx, _endPoint))
+        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Distinct().ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex , projectToken, ctx, _endPoint))
         {
             if (balanceResult.Balance > 0)
             {
@@ -257,6 +313,7 @@
 
     }
 
+    
 
 
     private string showDetailsAsHtml(string option)

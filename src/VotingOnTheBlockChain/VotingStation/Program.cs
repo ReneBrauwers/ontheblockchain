@@ -21,6 +21,7 @@ builder.Services.AddScoped<VotingManager>();
 builder.Services.AddScoped<AccountOfferManager>();
 builder.Services.AddScoped<AccountInfoManager>();
 builder.Services.AddScoped<OrderBookManager>();
+builder.Services.AddScoped<LedgerManager>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 SetHxComponents(); 
 await builder.Build().RunAsync();
