@@ -32,7 +32,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <param name="orderBookDepth">Depth of orders to return</param>
         /// <returns>Order book entries for the given issuer token</returns>
-        public async Task<List<AccountOrderBook>> GetOrderBook(string issuer, string currency, OrderType orderBookType, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/", int orderBookDepth = 5)
+        public async Task<List<OrderBook>> GetOrderBook(string issuer, string currency, OrderType orderBookType, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/", int orderBookDepth = 5)
         {
 
             _issuerAccount = issuer;
@@ -42,7 +42,7 @@ namespace Common.Services
             return await RetrieveOrderBook(orderBookDepth, cTokenSource.Token);
         }
 
-        private async Task<List<AccountOrderBook>> RetrieveOrderBook(int orderBookDepth, CancellationToken token)
+        private async Task<List<OrderBook>> RetrieveOrderBook(int orderBookDepth, CancellationToken token)
         {
             dynamic takerGets = new ExpandoObject();
             dynamic takerPays = new ExpandoObject();
@@ -96,9 +96,9 @@ namespace Common.Services
         /// <param name="socket"></param>
         /// <param name="originalRequest"></param>
         /// <returns></returns>
-        private async Task<List<AccountOrderBook>> ProcessOrderBook(ClientWebSocket socket, dynamic originalRequest, OrderType orderType, CancellationToken token)
+        private async Task<List<OrderBook>> ProcessOrderBook(ClientWebSocket socket, dynamic originalRequest, OrderType orderType, CancellationToken token)
         {
-            List<AccountOrderBook> Orders = new List<AccountOrderBook>();
+            List<OrderBook> Orders = new List<OrderBook>();
             dynamic marker = new ExpandoObject();
 
 
@@ -151,7 +151,7 @@ namespace Common.Services
                                 //iterate over all transactions, and populate / update the List<registrations>
                                 jsonResult.RootElement.GetProperty("offers").EnumerateArray().Select(x =>
                                 {
-                                    var order = new AccountOrderBook();
+                                    var order = new OrderBook();
                                     order.Account = x.GetProperty("Account").GetString();
 
                                     //add logic
@@ -161,11 +161,11 @@ namespace Common.Services
 
                                         if (x.TryGetProperty("TakerGets", out var takergets))
                                         {
-                                            order.Volume = Convert.ToDouble(takergets.GetProperty("value").GetString()); //amount to sell
-                                            order.Total = (Convert.ToDouble(x.GetProperty("TakerPays").GetString()) / 1000000); //amount to receive
+                                            order.Volume = Convert.ToDecimal(takergets.GetProperty("value").GetString()); //amount to sell
+                                            order.Total = (Convert.ToDecimal(x.GetProperty("TakerPays").GetString()) / 1000000); //amount to receive
                                             order.Currency = takergets.GetProperty("currency").GetString(); //currency to sell in
                                             order.Issuer = takergets.GetProperty("issuer").GetString(); // 								
-                                            order.Price = (Convert.ToDouble(x.GetProperty("quality").GetString()) / 1000000);
+                                            order.Price = (Convert.ToDecimal(x.GetProperty("quality").GetString()) / 1000000);
                                             order.OrderSummary = string.Concat("selling ", order.Volume.ToString("N2"), " ", order.Currency, " receiving ", order.Total.ToString("N2"), " XRP");
                                         }
 
@@ -177,8 +177,8 @@ namespace Common.Services
                                         if (x.TryGetProperty("TakerPays", out var takerpays))
                                         {
 
-                                            order.Volume = (Convert.ToDouble(x.GetProperty("TakerGets").GetString()) / 1000000); //amount paid
-                                            order.Total = Convert.ToDouble(takerpays.GetProperty("value").GetString()); //amount bought
+                                            order.Volume = (Convert.ToDecimal(x.GetProperty("TakerGets").GetString()) / 1000000); //amount paid
+                                            order.Total = Convert.ToDecimal(takerpays.GetProperty("value").GetString()); //amount bought
                                             order.Currency = takerpays.GetProperty("currency").GetString(); //currency to buy
                                             order.Issuer = takerpays.GetProperty("issuer").GetString(); // 
                                             order.Price = order.Volume / order.Total;  //(xrp divided by RPR)

@@ -8,27 +8,27 @@
 <PageTitle>Account Information</PageTitle>
 
 
-    <section class="text-center container mb-5">
-        <div class="row py-lg-5">
-            <div class="col-lg-6 col-md-8 mx-auto">
-                <h1 class="fw-light">Account Lookup</h1>
-                <p class="lead text-muted">
-                    Please enter/change the account you want to lookup, below
-                </p>
-                <div class="row">
-                    <div class="col-8">
-                        <HxInputText LabelType="LabelType.Regular" Label="Account address" @bind-Value="_account" LabelCssClass="float-start" />
-                    </div>
-                    <div class="col-auto mt-auto">
-                        <HxButton Text="Lookup" Size="ButtonSize.Small" Color="ThemeColor.Primary" OnClick="async () => await GetAccountInformationAndOrders()" />
-                    </div>
+<section class="text-center container mb-5">
+    <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+            <h1 class="fw-light">Account Lookup</h1>
+            <p class="lead text-muted">
+                Please enter/change the account you want to lookup, below
+            </p>
+            <div class="row">
+                <div class="col-8">
+                    <HxInputText LabelType="LabelType.Regular" Label="Account address" @bind-Value="_account" LabelCssClass="float-start" />
                 </div>
-
-
+                <div class="col-auto mt-auto">
+                    <HxButton Text="Lookup" Size="ButtonSize.Small" Color="ThemeColor.Primary" OnClick="async () => await GetAccountInformationAndOrders()" />
+                </div>
             </div>
+
+
         </div>
-    </section>
-    
+    </div>
+</section>
+
 
 @if (_accountInformation is not null && (!String.IsNullOrWhiteSpace(_accountInformation.Account)))
 {
@@ -45,15 +45,16 @@
                     <div class="card-body">
                         <div class="row mb-2">
                             <span>
-                            Account:&emsp;@_accountInformation.Account
+                                Account:&emsp;@_accountInformation.Account
                                 @if ((bool)_accountInformation.IsWhitelisted)
-                            {
-                                <em>&emsp;(aka: @_accountInformation.Alias)</em>
-                            }</span>
+                                {
+                                    <em>&emsp;(aka: @_accountInformation.Alias)</em>
+                                }
+                            </span>
                             <span>
                                 Balance:&emsp;@(_accountInformation.Balance) XRP
                             </span>
-                            </div>
+                        </div>
                         <div class="row mb-2">
                             <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@($"https://bithomp.com/explorer/{_account}")" target="_blank">View on Bithomp</a></div>
                             <div class="col-auto btn btn-outline-primary btn-sm me-2"><a class="nav-link" href="@($"https://xrpscan.com/account/{_account}")" target="_blank">View on XRPSCAN</a></div>
@@ -89,36 +90,101 @@ else
 
             @if (_openOrders is not null && _openOrders.Count > 0)
             {
-                @foreach (var groupedOrder in _openOrders.GroupBy(x => x.Currency))
+
+                @foreach (var groupedOrder in _openOrders.GroupBy(x => x.TypeOfOrder))
                 {
                     <div class="py-lg-2">
                         <div class="col-auto mb-2">
                             <div class="card rounded-3 shadow-sm">
                                 <div class="card-header py-3">
-                                    <h4 class="my-0 fw-normal">@groupedOrder.Key Orders</h4>
+                                    <h4 class="my-0 fw-normal">@groupedOrder.Key.ToString() Orders</h4>
                                 </div>
 
                                 <div class="card-body">
-                                    @foreach (var order in groupedOrder)
-                                    {
-                                        @if (order.Side == OrderType.Buy)
-                                        {
-                                            <h4 class="small fw-bold">
-                                                <span class="badge text-bg-success text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
-                                            </h4>
-                                        }
-                                        else
-                                        {
-                                            <h4 class="small fw-bold">
-                                                <span class="badge text-bg-danger text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
-                                            </h4>
-                                        }
+                                    @{
+                                        var counter = 0;
                                     }
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col"><small>#</small></th>
+                                                    <th scope="col"><small>Type</small></th>
+                                                    <th scope="col"><small>Quantity</small></th>
+                                                    <th scope="col"><small>Offer</small></th>
+                                                    <th scope="col"><small>Ex Rate</small></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var order in groupedOrder)
+                                                {
+                                                    counter++;
+                                                    <tr>
+                                                        <td><small>@counter.ToString("0000")</small></td>
+
+                                                        @if (order.TypeOfOrder == OrderType.Buy)
+                                                        {
+                                                            <td><span class="badge text-bg-success text-xxl-start"><small>@order.TypeOfOrder.ToString()</small></span></td>
+                                                        }
+
+                                                        @if (order.TypeOfOrder == OrderType.Sell)
+                                                        {
+                                                            <td><span class="badge text-bg-danger text-xxl-start"><small>@order.TypeOfOrder.ToString()</small></span></td>
+                                                        }
+
+                                                        @if (order.TypeOfOrder == OrderType.Swap)
+                                                        {
+                                                            <td><span class="badge text-bg-warning text-xxl-start"><small>@order.TypeOfOrder.ToString()</small></span></td>
+                                                        }
+
+                                                        <td><small>@($"{order.InAmount.ToString("N2")} {order.InCurrency}")</small></td>
+                                                        <td><small>@($"{order.OutAmount.ToString("N2")} {order.OutCurrency}")</small></td>
+                                                        <td><small>@($"{order.ExchangeRateVal} {order.ExchangeRate}")</small></td>
+
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 }
+
+
+
+
+                @* @foreach (var groupedOrder in _openOrders.GroupBy(x => x.Currency))
+        {
+        <div class="py-lg-2">
+        <div class="col-auto mb-2">
+        <div class="card rounded-3 shadow-sm">
+        <div class="card-header py-3">
+        <h4 class="my-0 fw-normal">@groupedOrder.Key Orders</h4>
+        </div>
+
+        <div class="card-body">
+        @foreach (var order in groupedOrder)
+        {
+        @if (order.Side == OrderType.Buy)
+        {
+        <h4 class="small fw-bold">
+        <span class="badge text-bg-success text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
+        </h4>
+        }
+        else
+        {
+        <h4 class="small fw-bold">
+        <span class="badge text-bg-danger text-xxl-start">@order.Side.ToString()</span>&emsp;<span>@order.OrderSummary</span>&emsp;<span class="badge text-bg-success float-end">at @order.Price.ToString("N6")</span>
+        </h4>
+        }
+        }
+        </div>
+        </div>
+        </div>
+        </div>
+        }*@
             }
             else
             {
@@ -157,7 +223,7 @@ else
     // private bool _accountIsWhitelisted = false;
     private bool _loading = false;
     private string _message = "";
-    private List<AccountOrderBook> _openOrders;
+    private List<AccountOffers> _openOrders;
     private AccountInformation _accountInformation;
 
     protected override async Task OnInitializedAsync()
@@ -174,7 +240,7 @@ else
     {
         _accountInformation = new();
         _openOrders = new();
-         
+
 
         if (!string.IsNullOrWhiteSpace(_account))
         {
@@ -209,7 +275,7 @@ else
                 _accountInformation.LookupLink = accountLookupLink;
                 _accountInformation.IsWhitelisted = accountIsWhitelisted;
                 _accountInformation.Balance = _accountInformation.Balance * (Decimal.Parse(_appConfig.GetValue<string>("dropvalue")));
-               
+
 
 
                 CancellationTokenSource ctxOrders = new CancellationTokenSource(new TimeSpan(0, 0, 20));

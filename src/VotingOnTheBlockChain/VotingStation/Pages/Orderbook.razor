@@ -50,7 +50,7 @@
                     </div>
                     <div class="row mt-3">
 
-                        <div class="col"><HxInputPercent TValue="float" @bind-Value="_priceRangeDiffPercentage" Min="0" Max="100" Label="Price range margin allowed tollerance" LabelCssClass="float-start" /></div>
+                        <div class="col"><HxInputPercent TValue="decimal" @bind-Value="_priceRangeDiffPercentage" Min="0" Max="100" Label="Price range margin allowed tollerance" LabelCssClass="float-start" /></div>
                     </div>
                     <div class="row mt-3">
 
@@ -317,14 +317,14 @@
     private bool _loading = true;
     private bool _selectionChanged = false;
     private bool _isAdvancedChecked = false;
-    private float _priceRangeDiffPercentage = 0.01f;
-    private int _minTotalSellAmount = 75000;
-    private int _minTotalSellTransactions = 1;
+    private decimal _priceRangeDiffPercentage = 0.20m;
+    private int _minTotalSellAmount = 20000;
+    private int _minTotalSellTransactions = 3;
     // private bool _sellWallFilterEnabled = false;
     // private List<AccountOrderBook> _orders = new List<AccountOrderBook>();
-    private List<AccountOrderBook> _buyOrders;
-    private List<AccountOrderBook> _sellOrders;
-    private List<List<AccountOrderBook>> _sellWalls;
+    private List<OrderBook> _buyOrders;
+    private List<OrderBook> _sellOrders;
+    private List<List<OrderBook>> _sellWalls;
 
     //the table is currently sorted by
     private bool IsSortedAscendingSellOrders;
@@ -409,9 +409,9 @@
     private void resetOrderBooks()
     {
         //_orders = new List<AccountOrderBook>();
-        _sellOrders = new List<AccountOrderBook>();
-        _buyOrders = new List<AccountOrderBook>();
-        _sellWalls = new List<List<AccountOrderBook>>();
+        _sellOrders = new List<OrderBook>();
+        _buyOrders = new List<OrderBook>();
+        _sellWalls = new List<List<OrderBook>>();
         // _sellWallFilterEnabled = false;
     }
 
@@ -423,7 +423,7 @@
     {
         _loading = true;
         _selectionChanged = false;
-        var tasks = new List<Task<List<AccountOrderBook>>>();
+        var tasks = new List<Task<List<OrderBook>>>();
         //if (_orders is null)
         //{
         //    _orders = new List<AccountOrderBook>();
@@ -438,13 +438,13 @@
             var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
             var sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
             var filteredItems = sellOrders.GroupBy(x => x.Account).Where(grp => grp.Count() >= _minTotalSellTransactions);
-            _sellWalls = new List<List<AccountOrderBook>>();
+            _sellWalls = new List<List<OrderBook>>();
             foreach (var groupedAccounts in filteredItems)
             {
 
-                double initialCompareprice = 0d;
-                List<AccountOrderBook> sellWall = new List<AccountOrderBook>();
-                AccountOrderBook? previousOrder = null;
+                Decimal initialCompareprice = 0;
+                List<OrderBook> sellWall = new List<OrderBook>();
+                OrderBook? previousOrder = null;
 
                 var groupedSellOrders = groupedAccounts.OrderBy(x => x.Price);
                 var itemsLeft = groupedSellOrders.Count();
@@ -458,7 +458,7 @@
 
                     if (previousOrder is null)
                     {
-                        previousOrder = new AccountOrderBook()
+                        previousOrder = new OrderBook()
                             {
                                 Account = sellOrder.Account,
                                 AccountAlias = sellOrder.AccountAlias,
@@ -502,11 +502,11 @@
                         else
                         {
                             //reset
-                            initialCompareprice = 0d;
+                            initialCompareprice = 0m;
                             _sellWalls.Add(sellWall);
-                            sellWall = new List<AccountOrderBook>();
+                            sellWall = new List<OrderBook>();
 
-                            previousOrder = new AccountOrderBook()
+                            previousOrder = new OrderBook()
                                 {
                                     Account = sellOrder.Account,
                                     AccountAlias = sellOrder.AccountAlias,
@@ -531,7 +531,7 @@
             if (_sellWalls is not null)
             {
                 //remove sell walls which do not meet the overall criteria
-                List<List<AccountOrderBook>> WallsToRemove = new List<List<AccountOrderBook>>();
+                List<List<OrderBook>> WallsToRemove = new List<List<OrderBook>>();
                 foreach (var sellWall in _sellWalls)
                 {
                     if (sellWall.Count() < _minTotalSellTransactions || sellWall.Sum(x => x.Volume) < _minTotalSellAmount)

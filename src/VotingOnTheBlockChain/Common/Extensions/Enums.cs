@@ -80,7 +80,8 @@ namespace Common.Extensions
 		{
             Undefined,
             Sell,
-            Buy
+            Buy,
+            Swap
 		}
 
        
