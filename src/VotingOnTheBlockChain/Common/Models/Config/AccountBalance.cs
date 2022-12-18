@@ -35,6 +35,7 @@ namespace Common.Models.Config
         /// </summary>
         public DateTime? LastRecordedVoteDateTime { get; set; }
 
-
+        public bool IsValid { get; set; }
+        public string InvalidReason { get; set; }
     }
 }

@@ -39,10 +39,15 @@
                 {
                     <spann class="badge rounded-pill text-bg-light mb-3">Ledger index end: ongoing</spann>
                 }
-                <span class="badge rounded-pill text-bg-light  mb-3">Total account votes: @_votingReport?.TotalAccountsVoted.ToString("N0")</span>
-                <span class="badge rounded-pill text-bg-light  mb-3">Total unique account votes: @_votingReport?.UniqueAccountsVoted</span>
-                <span class="badge rounded-pill text-bg-light  mb-3">Total valid and unique account votes: @_votingReport?.UniqueValidAccountsVoted.ToString("N0")</span>
-                <span class="badge rounded-pill text-bg-light  mb-3">Total votes cast: @_votingReport?.TotalVotesCast.ToString("N0")</span>
+         
+                <span class="badge rounded-pill text-bg-light mb-3">Total votes cast: @_votingReport?.TotalVotesCast.ToString("N0")</span>
+                <span class="badge rounded-pill text-bg-warning mb-3">Total account votes: @_votingReport?.TotalAccountsVoted.ToString("N0")</span>
+                <span class="badge rounded-pill text-bg-success  mb-3">Total (valid) account votes: @_votingReport?.UniqueValidAccountsVoted.ToString("N0")</span>
+
+                @if (_totalInvalidatedVotes > 0)
+                {
+                    <span class="badge rounded-pill text-bg-danger mb-3">Total invalidated votes: @_totalInvalidatedVotes.ToString("N0")</span>
+                }
                 @if (_latestLedgerIndex.ledgerIndex > 0)
                 {
                     <span class="badge rounded-pill text-bg-light  mb-3">Snapshot datetime (UTC): @_latestLedgerIndex.ledgerCloseTimeUTC.ToString("F")</span>
@@ -76,7 +81,7 @@
 
                                     @if (_isLive)
                                     {
-                                        
+
                                         <div class="col-auto">
                                             <button class="btn btn-sm btn-warning position-relative float" type="button" @onclick="@Refresh">Refresh results</button>
                                         </div>
@@ -103,9 +108,9 @@
                                             <div class="collapse multi-collapse" id="@collapseId">
                                                 <div class="card card-body">
                                                     <!-- content-->
-                                                                                        <div class="col-auto">
-                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
-                                    </div>
+                                                    <div class="col-auto">
+                                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
+                                                    </div>
                                                     <div class="table-responsive">
                                                         <table class="table table-sm">
                                                             <thead>
@@ -163,6 +168,53 @@
                     </div>
                 </div>
             }
+
+            @if (_invalidatedVotingInfo is not null && _invalidatedVotingInfo.Count > 0)
+            {
+                <div class="row">
+                    <div class="col">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <h4 class="my-0 fw-normal">Invalidated vote results</h4>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col"><small>Account</small></th>
+                                                <th scope="col"><small>Last voted</small></th>
+                                                 <th scope="col"><small>Reason</small></th>
+                                                <th scope="col"><small>Voted on</small></th>
+                                                <th scope="col"><small>Index</small></th>                                               
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var info in _invalidatedVotingInfo)
+                                            {
+                                                <tr>
+                                                    <td><small><a href="@($"https://xrpscan.com/account/{info.Address}")" target="_blank">@info.Address</a></small></td>
+                                                    <td><small>@info.VoteRecordedDateTime?.ToString("F")</small></td>
+                                                    <td><small>@info.Reason</small></td>
+                                                    <td><small>@info.Option</small></td>
+                                                    <td><small>@info.LedgerIndex</small></td>
+                                                    
+                                                </tr>
+                                            }
+
+                                        </tbody>
+                                    </table>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            }
         }
 
     </div>
@@ -213,6 +265,9 @@
 
     //the table is currently sorted by
     private bool _sortDetailsByVotes = true;
+
+    private int _totalInvalidatedVotes;
+    private List<InvalidVotingsReport> _invalidatedVotingInfo = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -316,7 +371,7 @@
         }
         else
         {
-            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
+            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, votingId, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
             {
                 rawVotingResults.Add(result);
                 //if timestamp is newer, do an update
@@ -351,17 +406,30 @@
             _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken, (uint)votingEndIndex, _endPoint);
         }
 
-
         //get account balances
         ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
 
-
         var accountsWithVotes = 0;
+        //var balanceResultsReceived = 0;
         await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Keys.ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, ctx, _endPoint))
         {
-            if (balanceResult.Balance > 0)
+  
+            try
             {
                 var optionVotedOn = rawVotingResults.Where(x => x.VoterAddress == balanceResult.Address).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault().VoterChoice;
+
+                if (!balanceResult.IsValid)
+                {
+                    _invalidatedVotingInfo.Add(new InvalidVotingsReport()
+                        {
+                            Address = balanceResult.Address,
+                            LedgerIndex = balanceResult.LedgerIndex,
+                            VoteRecordedDateTime = balanceResult.LastRecordedVoteDateTime,
+                            Reason = balanceResult.InvalidReason,
+                            TotalVotes = balanceResult.Balance,
+                            Option = optionVotedOn
+                        });
+                }
 
                 //now update the last know voting date/time (should allign with the ledger index)
                 if (accounts.TryGetValue(balanceResult.Address, out DateTime lastVoteRecordedTimeStamp))
@@ -378,13 +446,23 @@
                     accountsWithVotes++; //actual valid accounts as they have a vote count > 0
                 }
             }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+  
 
 
         }
 
         //summarize
+        var totalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
         _votingReport.TotalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
-        _votingReport.UniqueValidAccountsVoted = accountsWithVotes;
+        _votingReport.UniqueValidAccountsVoted = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => x.IsValid);
+        _totalInvalidatedVotes = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => (!x.IsValid));
+
+
         _votingReport.UniqueAccountsVoted = accounts.Distinct().Count();
         _votingReport.TotalAccountsVoted = accounts.Count();
         foreach (var detailItem in _votingReport.Details)
@@ -412,7 +490,7 @@
         var templateHtml = "<tr><th scope='row'><small><a class='link-success' href='/accountinfo?acc=#accountid#' target='_blank'>#accountidtrunc#</a></small></th><td><small>#votedAt#</small></td><td><small>#totalvotes#</small></td></tr>";
         if (details is not null)
         {
-            
+
             foreach (var item in details.votingAccountDetails.ToList().OrderByDescending(x => x.GetType()
                                                             .GetProperty((_sortDetailsByVotes ? "Balance" : "LastRecordedVoteDateTime"))
                                                             .GetValue(x, null))
@@ -445,9 +523,9 @@
 
     }
 
- 
 
-   
+
+
 
 
 }
