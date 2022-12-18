@@ -63,7 +63,15 @@ else
 {
     <div class="album py-5 bg-light">
         <div class="container">
-            <HxAlert Color="ThemeColor.Danger"><h2>Alpha version, not all functionality is currently working.</h2></HxAlert>
+            @if (_liveVotingAvailable)
+            {
+                <span class="text-center">
+                    <HxAlert Color="ThemeColor.Warning"><h2>Voting is experimental, but stable.</h2>
+                <p><small>When voting with you ledger, please ensure to have you device connected using USB and have the XRP app open</small></p>
+                    <p><small>When voting with Xumm, please note that there might be a small delay before you are being redirected. </small></p>
+                    </HxAlert>                
+             </span>
+             }
             @if (_lastVotings is not null && _lastVotings.Count > 0)
             {
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 g-3">
@@ -87,8 +95,7 @@ else
                                                 <HxDropdownMenu>
 
                                                     @foreach (var voteoption in voting.VotingOptions)
-                                                    {
-
+                                                    {                                                        
                                                         <HxDropdownItem OnClick="@(async ()=>await CastVote(voting,voteoption))" Enabled="@((@voting.IsLive))" >@voteoption</HxDropdownItem>
 
                                                     }
@@ -140,6 +147,7 @@ else
     private List<Voting> _lastVotings { get; set; } = new();
     private ProjectConfig _selectedProjectConfig { get; set; } = new();
     public bool _latestVotingFetched = false;
+    private bool _liveVotingAvailable = false;
     private string _signingMethod { get; set; } = "ledger";
     protected override async Task OnInitializedAsync()
     {
@@ -162,12 +170,14 @@ else
 
     private async Task<bool> GetVotings()
     {
+        
         if (_lastVotings is not null && _lastVotings.Count > 0)
         {
             return true;
         }
 
         bool isSuccess = false;
+        _liveVotingAvailable = false;
         try
         {
             foreach (var project in _projectsConfig)
@@ -176,6 +186,10 @@ else
                 var result = await _votingManager.GetLastVoting(project, ctx);
                 if (result is not null && result?.VotingOptions?.Count() > 0)
                 {
+                    if(result.IsLive)
+                    {
+                        _liveVotingAvailable = true;
+                    }
                     _lastVotings.Add(result);
                 }
             }
@@ -192,6 +206,7 @@ else
 
     private async Task CastVote(Voting voteInfo, string votedOn)
     {
+
         var votingId = voteInfo.VotingId;
         var voteCastOn = votedOn.StringToHex();
         var destination = voteInfo.VotingAccount;
@@ -203,12 +218,13 @@ else
             case "ledger":
                 {
                     var ep = _appConfig.GetValue<string>("ledgerApiEndPoint");
-                    votingEndpoint = $"{ep}? id ={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
+                    votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
                     await JS.InvokeVoidAsync("redirectExternal", votingEndpoint, "_blank");
                     break;
                 }
             case "xumm":
                 {
+                   
                     var ep = _appConfig.GetValue<string>("xummApiEndPoint");
                     votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
                     //votingEndpoint = $"https://xummapp.free.beeceptor.com?id={votingId}&vote={voteCastOn}&dest={destination}";
@@ -227,6 +243,7 @@ else
                         await JS.InvokeVoidAsync("redirectExternal", content.next.always, "_blank");
                         //}
                     }
+                   
                     break;
                 }
             default:
