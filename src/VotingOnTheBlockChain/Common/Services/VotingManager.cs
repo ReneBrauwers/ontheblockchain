@@ -22,6 +22,477 @@ namespace Common.Services
     public sealed class VotingManager
     {
 
+        /// <summary>
+        /// Operation which will retrieve the all completed votings given a certain start range
+        /// </summary>
+        /// <param name="socketEndpoint">Rippled Server endpoint</param>
+        /// <param name="cTokenSource">Token source allowing a controlled cancellation</param>
+        /// <returns></returns>
+        public async IAsyncEnumerable<Voting> GetVotings(List<ProjectConfig> projectConfigurationSettings, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        {
+             
+            Voting voting;
+            var _options = new JsonSerializerOptions()
+            { PropertyNameCaseInsensitive = true };
+
+            Uri socketUrl = new Uri(socketEndpoint);
+
+            using (var client = new ClientWebSocket())
+            {
+                await client.ConnectAsync(socketUrl, cTokenSource.Token);
+
+                foreach (var project in projectConfigurationSettings)
+                {
+                  
+                    uint indexStopIndicator = project.LedgerVotingStartIndex;
+
+
+                    //create request
+                    dynamic xrplRequest = new ExpandoObject();
+                    //List<string> accounts = new List<string>() { _selectedValue.VotingAccount };
+
+                    xrplRequest.id = Guid.NewGuid();
+                    xrplRequest.command = "account_tx";
+                    xrplRequest.account = project.ControllerAccount; //account responsible for initiating a vote start and vote end
+
+                    //indicates to move back in time
+                    xrplRequest.forward = false;
+
+
+                    //open connection
+                    if (client.State != WebSocketState.Open)
+                    {
+                        await client.ConnectAsync(socketUrl, cTokenSource.Token);
+                    }
+
+                    //send request
+                    var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
+                    await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
+
+                    //receive
+                    dynamic marker = new ExpandoObject();
+                    bool morePages = false;
+
+
+                    var buffer = new ArraySegment<byte>(new byte[2048]);
+
+                    do
+                    {
+                        //try
+                        //{
+                        WebSocketReceiveResult result;
+                        using (var ms = new MemoryStream())
+                        {
+                            do
+                            {
+                                result = await client.ReceiveAsync(buffer, cTokenSource.Token);
+                                ms.Write(buffer.Array, buffer.Offset, result.Count);
+
+                            } while (!result.EndOfMessage);
+
+                            if (result.MessageType == WebSocketMessageType.Close)
+                                break;
+
+                            ms.Seek(0, SeekOrigin.Begin);
+                            using (var reader = new StreamReader(ms, Encoding.UTF8))
+                            {
+                                var responseMessage = await reader.ReadToEndAsync();
+
+                                if (!string.IsNullOrWhiteSpace(responseMessage))
+                                {
+                                    voting = new Voting();
+                                    var responseJson = JsonDocument.Parse(responseMessage);
+
+                                    if (responseJson != null)
+                                    {
+                                        var jsonResult = JsonDocument.Parse(responseJson.RootElement.GetProperty("result").ToString());
+
+                                        //check for marker at result.marker                               
+                                        var markerElements = jsonResult.RootElement.EnumerateObject().Where(x => x.NameEquals("marker"));
+                                        if (markerElements != null && markerElements.Count() > 0)
+                                        {
+                                            //determine type                                    
+                                            marker = markerElements.First().Value;
+                                            morePages = true;
+
+                                        }
+                                        else
+                                        {
+                                            morePages = false;
+                                        }
+
+
+                                        if (responseJson.RootElement.GetProperty("status").ValueEquals("success"))
+                                        {
+
+
+                                            if (jsonResult.RootElement.GetProperty("transactions").GetArrayLength() > 0)
+                                            {
+                                                //var transactionString = jsonResult.RootElement.GetProperty("transactions").GetRawText();
+                                                var transactions = jsonResult.RootElement.GetProperty("transactions").EnumerateArray().AsEnumerable();
+                                               
+
+
+                                                foreach (var txs in transactions)
+                                                {                                                   
+                                                   
+                                                    var tx = txs.GetProperty("tx");
+                                                   
+                                                    //only proceed whilst the retrieved data has not surpassed the start index from the project config
+                                                    if (indexStopIndicator < tx.GetProperty("ledger_index").GetUInt32())
+                                                    {
+
+                                                        if (tx.TryGetProperty("Memos", out var MemoJsonElement))
+                                                        {
+                                                            if (MemoJsonElement.ValueKind == JsonValueKind.Array)
+                                                            {
+
+                                                                if (tx.GetProperty("Memos").GetArrayLength() > 0)
+                                                                {
+                                                                    var memosCount = tx.GetProperty("Memos").GetArrayLength();
+                                                                    if (memosCount > 2) // we have a new voting
+                                                                    {
+                                                                        //as we are travelling back in time, we should have a end-voting instruction first; if not skip; as this voting 
+                                                                        //appears to be a live one.
+                                                                        if (voting is not null && voting.VotingEndIndex > 0)
+                                                                        {
+
+                                                                            var votingId = tx.GetProperty("Memos")[0].GetProperty("Memo").GetProperty("MemoData").GetString();
+                                                                            voting.VotingStartIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                            voting.VotingId = votingId;
+                                                                            voting.VotingName = votingId.HexToString();
+                                                                            voting.ProjectToken = project.ProjectToken;
+                                                                            voting.ProjectName = project.ProjectName;
+                                                                            voting.VotingDataReference = String.Empty;
+                                                                            voting.IssuerAccount = project.IssuerAccount;
+                                                                            voting.VotingAccount = tx.GetProperty("Destination").GetString();
+                                                                            voting.VotingControllerAccount = project.ControllerAccount;
+                                                                            //get voting options
+                                                                            var votingOptions = tx.GetProperty("Memos").EnumerateArray().AsEnumerable().Skip(1).Select(x => x.GetProperty("Memo").GetProperty("MemoData").GetString().HexToString()).ToArray();
+                                                                            voting.VotingOptions = votingOptions;
+
+                                                                            //yield the result back
+                                                                            
+                                                                            yield return voting;
+                                                                            voting = new();
+                                                                           
+                                                                        }
+
+                                                                    }
+                                                                    if (memosCount == 2) //should be an end
+                                                                    {
+                                                                        if (tx.GetProperty("Memos")[1].GetProperty("Memo").GetProperty("MemoData").GetString().HexToString().ToUpper().Contains("ENDS"))
+                                                                        {
+                                                                            if (voting is not null)
+                                                                            {
+                                                                                voting.VotingEndIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                                voting.IsLive = false;
+
+
+                                                                            }
+
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        //we exit
+                                                        morePages = false;
+                                                    }
+
+
+
+
+                                                }
+
+
+                                            }
+
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        //ensure we exit
+                                        morePages = false;
+                                    }
+
+
+
+
+                                    if (morePages)
+                                    {
+
+                                        xrplRequest.marker = marker;
+                                        requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
+
+
+                                        await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
+                                        //buffer = new ArraySegment<byte>(new byte[2048]);
+                                    }
+                                }
+
+
+                            }
+                        }
+
+
+
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    morePages = false;
+                        //
+                        //}
+                    } while (morePages);
+
+
+
+                }
+
+
+
+
+
+            }
+
+            //return voting;
+        }
+
+        /// <summary>
+        /// Operation which will retrieve the last voting found
+        /// </summary>
+        /// <param name="socketEndpoint">Rippled Server endpoint</param>
+        /// <param name="cTokenSource">Token source allowing a controlled cancellation</param>
+        /// <returns></returns>
+        public async Task<Voting> GetVoting(ProjectConfig projectConfigurationSettings, uint startIndex, uint endIndex ,CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        {
+            var _options = new JsonSerializerOptions()
+            { PropertyNameCaseInsensitive = true };
+
+            Uri socketUrl = new Uri(socketEndpoint);
+            Voting voting = new Voting();
+            using (var client = new ClientWebSocket())
+            {
+                await client.ConnectAsync(socketUrl, cTokenSource.Token);
+
+                //create request
+                dynamic xrplRequest = new ExpandoObject();
+                //List<string> accounts = new List<string>() { _selectedValue.VotingAccount };
+
+                xrplRequest.id = Guid.NewGuid();
+                xrplRequest.command = "account_tx";
+                xrplRequest.ledger_index_min = startIndex;
+                xrplRequest.ledger_index_max = endIndex;
+                xrplRequest.account = projectConfigurationSettings.ControllerAccount; //account responsible for initiating a vote start and vote end
+
+                //indicates to move back in time
+                xrplRequest.forward = false;
+
+
+                //open connection
+                if (client.State != WebSocketState.Open)
+                {
+                    await client.ConnectAsync(socketUrl, cTokenSource.Token);
+                }
+
+                //send request
+                var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
+                await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
+
+                //receive
+                dynamic marker = new ExpandoObject();
+                bool morePages = false;
+
+
+                var buffer = new ArraySegment<byte>(new byte[2048]);
+
+                do
+                {
+                    try
+                    {
+                        WebSocketReceiveResult result;
+                        using (var ms = new MemoryStream())
+                        {
+                            do
+                            {
+                                result = await client.ReceiveAsync(buffer, cTokenSource.Token);
+                                ms.Write(buffer.Array, buffer.Offset, result.Count);
+
+                            } while (!result.EndOfMessage);
+
+                            if (result.MessageType == WebSocketMessageType.Close)
+                                break;
+
+                            ms.Seek(0, SeekOrigin.Begin);
+                            using (var reader = new StreamReader(ms, Encoding.UTF8))
+                            {
+                                var responseMessage = await reader.ReadToEndAsync();
+
+                                if (!string.IsNullOrWhiteSpace(responseMessage))
+                                {
+                                    var responseJson = JsonDocument.Parse(responseMessage);
+
+                                    if (responseJson != null)
+                                    {
+                                        var jsonResult = JsonDocument.Parse(responseJson.RootElement.GetProperty("result").ToString());
+
+                                        //check for marker at result.marker                               
+                                        var markerElements = jsonResult.RootElement.EnumerateObject().Where(x => x.NameEquals("marker"));
+                                        if (markerElements != null && markerElements.Count() > 0)
+                                        {
+                                            //determine type                                    
+                                            marker = markerElements.First().Value;
+                                            morePages = true;
+
+                                        }
+                                        else
+                                        {
+                                            morePages = false;
+                                        }
+
+
+                                        if (responseJson.RootElement.GetProperty("status").ValueEquals("success"))
+                                        {
+
+
+
+
+
+                                            if (jsonResult.RootElement.GetProperty("transactions").GetArrayLength() > 0)
+                                            {
+                                                //var transactionString = jsonResult.RootElement.GetProperty("transactions").GetRawText();
+                                                var transactions = jsonResult.RootElement.GetProperty("transactions").EnumerateArray().AsEnumerable();
+                                                var counter = 0;
+
+                                                //we will exit whenever we have found a START voting
+
+
+                                                foreach (var txs in transactions)
+                                                {
+                                                    counter++;
+
+                                                    var tx = txs.GetProperty("tx");
+                                                    if (tx.TryGetProperty("Memos", out var MemoJsonElement))
+                                                    {
+                                                        if (MemoJsonElement.ValueKind == JsonValueKind.Array)
+                                                        {
+
+                                                            if (tx.GetProperty("Memos").GetArrayLength() > 0)
+                                                            {
+                                                                var memosCount = tx.GetProperty("Memos").GetArrayLength();
+                                                                if (memosCount > 2) // we have a new voting
+                                                                {
+
+                                                                    var votingId = tx.GetProperty("Memos")[0].GetProperty("Memo").GetProperty("MemoData").GetString();
+                                                                    voting.VotingStartIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                    voting.VotingId = votingId;
+                                                                    voting.VotingName = votingId.HexToString();
+                                                                    voting.ProjectToken = projectConfigurationSettings.ProjectToken;
+                                                                    voting.ProjectName = projectConfigurationSettings.ProjectName;
+                                                                    voting.VotingDataReference = String.Empty;
+                                                                    if (voting.VotingEndIndex > 0)
+                                                                    {
+                                                                        voting.IsLive = false;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        voting.VotingEndIndex = 0;
+                                                                        voting.IsLive = true;
+                                                                    }
+                                                                    voting.IssuerAccount = projectConfigurationSettings.IssuerAccount;
+                                                                    voting.VotingAccount = tx.GetProperty("Destination").GetString();
+                                                                    voting.VotingControllerAccount = projectConfigurationSettings.ControllerAccount;
+                                                                    //get voting options
+                                                                    var votingOptions = tx.GetProperty("Memos").EnumerateArray().AsEnumerable().Skip(1).Select(x => x.GetProperty("Memo").GetProperty("MemoData").GetString().HexToString()).ToArray();
+                                                                    voting.VotingOptions = votingOptions;
+
+                                                                    //let's exit
+                                                                    morePages = false;
+                                                                    cTokenSource.Cancel();
+                                                                    break;
+
+                                                                }
+                                                                if (memosCount == 2) //should be an end
+                                                                {
+                                                                    if (tx.GetProperty("Memos")[1].GetProperty("Memo").GetProperty("MemoData").GetString().HexToString().ToUpper().Contains("ENDS"))
+                                                                    {
+                                                                        if (voting is not null)
+                                                                        {
+
+                                                                            voting.VotingEndIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                            voting.IsLive = false;
+
+
+                                                                        }
+
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+
+                                                }
+
+
+                                            }
+
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        //ensure we exit
+                                        morePages = false;
+                                    }
+
+
+
+
+                                    if (morePages)
+                                    {
+
+                                        xrplRequest.marker = marker;
+                                        requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
+
+
+                                        await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
+                                        //buffer = new ArraySegment<byte>(new byte[2048]);
+                                    }
+                                }
+
+
+                            }
+                        }
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        morePages = false;
+
+                    }
+                } while (morePages);
+
+
+
+
+
+
+
+
+
+            }
+
+            return voting;
+        }
+
+
 
         /// <summary>
         /// Operation which will retrieve the last voting found
@@ -389,13 +860,13 @@ namespace Common.Services
                                                                         var address = txs.GetProperty("Account").GetString();
                                                                         //add check if we received an END notification
                                                                         bool containsEnds = memoField[1].GetProperty("Memo").GetProperty("MemoData").GetString().HexToString().ToUpper().Contains("ENDS");
-                                                                      
+
                                                                         bool isFromControllerAccount = (address == votingControllerAccount ? true : false);
                                                                         bool isNotAtsameLedgerAsStart = (txs.GetProperty("inLedger").GetUInt32() != xrplRequest.ledger_index_min);
                                                                         if (containsEnds && isFromControllerAccount)
                                                                         {
                                                                             votingHasEnded = true;
-                                                                           
+
                                                                         }
                                                                         else
                                                                         {
@@ -412,7 +883,7 @@ namespace Common.Services
                                                                     {
                                                                         var address = txs.GetProperty("Account").GetString();
                                                                         var id = memoField[0].GetProperty("Memo").GetProperty("MemoData").GetString().HexToString();
-                                                                       
+
                                                                     }
 
                                                                     break;
@@ -606,13 +1077,13 @@ namespace Common.Services
                                                                     var address = txs.GetProperty("Account").GetString();
                                                                     //add check if we received an END notification
                                                                     bool containsEnds = memoField[1].GetProperty("Memo").GetProperty("MemoData").GetString().HexToString().ToUpper().Contains("ENDS");
-                                                                   
+
                                                                     bool isFromControllerAccount = (address == votingControllerAccount ? true : false);
                                                                     bool isNotAtsameLedgerAsStart = (txs.GetProperty("inLedger").GetUInt32() != xrplRequest.ledger_index_min);
                                                                     if (containsEnds && isFromControllerAccount)
                                                                     {
                                                                         votingHasEnded = true;
-                                                                       
+
                                                                     }
                                                                     else
                                                                     {
@@ -629,7 +1100,7 @@ namespace Common.Services
                                                                 }
                                                             case >= 3:
                                                                 {
-                                                                  
+
 
                                                                     break;
                                                                 }
@@ -753,12 +1224,12 @@ namespace Common.Services
                 //Set up receive
                 Dictionary<string, bool> workItems = new Dictionary<string, bool>();
                 Addresses.ForEach(x => workItems[x] = false);
-                await foreach(var result in ProcessAccountBalance(clientWebsocket, PeerAccount, LedgerGetBalanceIndex, Currency, workItems, cTokenSource.Token))
+                await foreach (var result in ProcessAccountBalance(clientWebsocket, PeerAccount, LedgerGetBalanceIndex, Currency, workItems, cTokenSource.Token))
                 {
-                   
+
                     yield return result;
                 }
-                
+
 
 
             }
@@ -772,7 +1243,7 @@ namespace Common.Services
 
         private async IAsyncEnumerable<AccountBalance> ProcessAccountBalance(ClientWebSocket socket, string peerAccount, uint ledgerGetBalanceIndex, string currency, Dictionary<string, bool> WorkItems, CancellationToken token)
         {
-           
+
 
 
             dynamic marker = new ExpandoObject();
@@ -782,7 +1253,7 @@ namespace Common.Services
             do
             {
                 var itemsLeft = WorkItems.Where(x => x.Value == false).Count();
-               
+
                 WebSocketReceiveResult result;
                 using (var ms = new MemoryStream())
                 {
@@ -813,7 +1284,7 @@ namespace Common.Services
                             accountBalanceResult.IsValid = false;
                             accountBalanceResult.InvalidReason = string.Empty;
 
-                           
+
 
                             if (responseJson != null && responseJson.RootElement.GetProperty("status").ValueEquals("success"))
                             {
@@ -846,18 +1317,18 @@ namespace Common.Services
                                     if (jsonResult.RootElement.GetProperty("lines").GetArrayLength() > 0)
                                     {
                                         var arrayLength = jsonResult.RootElement.GetProperty("lines").GetArrayLength();
-                                      
+
                                         for (int i = 0; i < arrayLength; i++)
                                         {
                                             var accountLineCurrency = jsonResult.RootElement.GetProperty("lines")[i].GetProperty("currency").GetString().HexToString();
                                             if (accountLineCurrency.ToLower() == currency.ToLower())
                                             {
                                                 morePages = false; //not need to continue on the next page, we already found a hit!
-                                               
+
                                                 trustLineFound = true;
                                                 var accountBalanceInfo = Decimal.Parse(jsonResult.RootElement.GetProperty("lines")[i].GetProperty("balance").GetString(), System.Globalization.NumberStyles.Float);
                                                 accountBalanceResult.Balance = accountBalanceInfo;
-                                             
+
                                                 if (accountBalanceInfo > 0)
                                                 {
                                                     accountBalanceValid = true;
@@ -889,7 +1360,7 @@ namespace Common.Services
 
                                     if (morePages)
                                     {
-                                        dynamic xrplRequest = new ExpandoObject();                                        
+                                        dynamic xrplRequest = new ExpandoObject();
                                         xrplRequest.id = correlationId;
                                         xrplRequest.command = "account_lines";
                                         xrplRequest.account = correlationId;

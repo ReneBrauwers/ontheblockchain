@@ -1,0 +1,147 @@
+﻿@page "/votingarchive"
+@using Common.Extensions;
+@using Common.Models.Xumm;
+@inject HttpClient Http
+@inject NavigationManager _navManager
+@inject ConfigManager _configManager
+@inject VotingManager _votingManager
+@inject IConfiguration _appConfig
+@inject IJSRuntime JS
+
+<PageTitle>Live Votings</PageTitle>
+<section class="text-center container">
+    <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+            <h1 class="fw-light">Voting archive</h1>
+            <p class="lead text-muted">
+                A list of last known XRPL Project votes is being displayed below. Click on the results button to view and select from a list of previous votings.
+            </p>
+            @if (!_latestVotingFetched)
+            {
+                <span>
+                    <HxSpinner Size="SpinnerSize.Regular" Color="ThemeColor.Warning"></HxSpinner>Fetching data from XRPL
+                </span>
+                @*     <div class="album py-5 bg-light">
+            <div class="container">
+            <div style="display:grid;place-items:center;margin-top:10%">
+            <span class="loader">Fetching data from XRPL</span>
+            </div>
+            </div>
+            </div>*@
+
+            }
+        </div>
+    </div>
+</section>
+
+
+<div class="album py-5 bg-light">
+    <div class="container">
+
+        @if (_archivedVotings is not null && _archivedVotings.Count > 0)
+        {
+
+            @foreach (var groupedVoting in _archivedVotings.GroupBy(x => x.ProjectName))
+            {
+                <div class="row mb-3">
+                    <div class="col-auto">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="my-0 fw-normal">@groupedVoting.Key Votings</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                  
+                                                @foreach (var voteInfo in groupedVoting)
+                                                {
+                                                 
+
+                                        <a class="btn btn-outline-dark btn-sm me-3 mb-3" href="/votingresults?@($"ia={voteInfo.IssuerAccount}&si={voteInfo.VotingStartIndex}&va={voteInfo.VotingAccount}&vca={voteInfo.VotingControllerAccount}&id={voteInfo.VotingId}&ei={voteInfo.VotingEndIndex}&pn={voteInfo.ProjectName}&pt={voteInfo.ProjectToken}")" target="_blank">@voteInfo.VotingName</a>
+                                                            
+                                                }
+                                     
+                                </div>
+
+
+
+
+
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        }
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+
+    private List<ProjectConfig>? _projectsConfig { get; set; } //= new List<ProjectConfig>();
+    private List<Voting> _archivedVotings { get; set; } = new();
+    private ProjectConfig _selectedProjectConfig { get; set; } = new();
+    public bool _latestVotingFetched = false;
+    protected override async Task OnInitializedAsync()
+    {
+        _projectsConfig = new();
+        //await _configManager.ClearLocalStore();
+        _projectsConfig = await _configManager.GetProjectsConfig();
+        if (_projectsConfig.Count > 0)
+        {
+            if (await GetArchivedVotings())
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        _latestVotingFetched = true;
+
+    }
+
+
+
+    private async Task<bool> GetArchivedVotings()
+    {
+
+        if (_archivedVotings is not null && _archivedVotings.Count > 0)
+        {
+            return true;
+        }
+
+        bool isSuccess = false;
+        string rippledServer = "wss://xrplcluster.com/";
+        try
+        {
+            //foreach (var project in _projectsConfig)
+            //{
+            CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
+            await foreach (var result in _votingManager.GetVotings(_projectsConfig, ctx, rippledServer))
+            {
+                _archivedVotings.Add(result);
+                await InvokeAsync(StateHasChanged);
+            }
+            //}
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+
+        return isSuccess;
+    }
+
+
+
+}
