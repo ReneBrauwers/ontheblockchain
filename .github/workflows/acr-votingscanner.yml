@@ -1,0 +1,34 @@
+name: Build & Deploy votingscanner container to ACR
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths: ['src/VotingOnTheBlockChain/VotingScanner/**']
+env:
+  IMAGE_NAME: votingscanner  
+  RESOURCE_GROUP: common
+  LOCATION: westus
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Read version from file
+        id: tag
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: src/VotingOnTheBlockChain/VotingScanner/version.txt
+      - name: Echo version.txt
+        run: echo "${{ steps.tag.outputs.content }}"
+      - name: Log into registry
+        uses: azure/docker-login@v1        
+        with:
+          login-server: servian.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - run: |
+          docker build src/VotingOnTheBlockChain/VotingScanner/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }} -t servian.azurecr.io/${{ env.IMAGE_NAME }}:latest}
+          docker push servian.azurecr.io/${{ env.IMAGE_NAME }} --all-tags
+    outputs:
+      buildversion: ${{ steps.tag.outputs.content }}
