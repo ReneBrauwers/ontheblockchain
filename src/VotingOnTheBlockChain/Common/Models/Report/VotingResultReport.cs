@@ -13,7 +13,9 @@ namespace Common.Models.Report
         public int TotalAccountsVoted { get; set; }
         public int UniqueAccountsVoted { get; set; }
         public int UniqueValidAccountsVoted { get; set; }
+        public int totalInvalidatedVotes { get; set; }
         public List<VoteResults> Details { get; set; }
+
     }
     public class VoteResults
     {        

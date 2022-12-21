@@ -17,7 +17,7 @@ namespace Common.Models.Config
         public string VotingControllerAccount { get; set; }
         public uint VotingStartIndex { get; set; }
         public uint VotingEndIndex { get; set; }
-        public string VotingDataReference { get; set; }
+        //public string VotingDataReference { get; set; }
         public bool IsLive { get; set; }
         public string[] VotingOptions { get; set; }
     }

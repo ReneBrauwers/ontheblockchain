@@ -39,9 +39,9 @@
                 {
                     <spann class="badge rounded-pill text-bg-light mb-3">Ledger index end: ongoing</spann>
                 }
-         
+
                 <span class="badge rounded-pill text-bg-light mb-3">Total votes cast: @_votingReport?.TotalVotesCast.ToString("N0")</span>
-                <span class="badge rounded-pill text-bg-warning mb-3">Total account votes: @_votingReport?.TotalAccountsVoted.ToString("N0")</span>
+                <span class="badge rounded-pill text-bg-warning mb-3">Total account votes: @_popularVote.Count().ToString("N0")</span>
                 <span class="badge rounded-pill text-bg-success  mb-3">Total (valid) account votes: @_votingReport?.UniqueValidAccountsVoted.ToString("N0")</span>
 
                 @if (_totalInvalidatedVotes > 0)
@@ -56,166 +56,197 @@
             </p>
         </div>
     </div>
+    @if(!string.IsNullOrWhiteSpace(_warningMessage))
+    {
+    <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+            <div class="alert alert-danger" role="alert">
+                @_warningMessage;
+            </div>
+            </div>
+    </div>
+    }
 </section>
 <div class="album py-5 bg-light">
     <div class="container">
-        @if (!_latestVotingFetched)
+
+        <div class="row">
+            @if (!popularVoteIsLoading)
+            {
+                <div class="col-lg-6 mb-4">
+                    <div class="card rounded-3 shadow-sm">
+                        <div class="card-header py-3">
+                            <div class="row">
+                                <div class="col">
+                                    <h4 class="my-0 fw-normal">Voting results</h4>
+                                    @if (generalVoteIsLoading)
+                                    {
+                                        <span class="float-end">
+                                            <HxSpinner Size="SpinnerSize.Regular" Color="ThemeColor.Danger"></HxSpinner>
+                                        </span>
+
+
+                                    }
+                                </div>
+
+                                @if (_isLive)
+                                {
+
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-warning position-relative float" type="button" @onclick="@Refresh">Refresh results</button>
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (_votingReport is not null && _votingReport.Details is not null && _votingReport.Details.Count > 0 && (_votingReport.Details.Select(x => x.TotalVotes).Count() > 0))
+                            {
+                                int position = 0;
+                                foreach (var resultItem in _votingReport.Details.OrderByDescending(x => x.PercentageVote))
+                                {
+                                    position++;
+                                    var collapseId = string.Concat("rv", Guid.NewGuid());
+                                    <h4 class="small fw-bold">
+                                        <span class="badge text-success"></span><span class="float-start">@String.Concat(@position.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalVotes.ToString("N0") votes</em></span>
+                                        <button class="btn btn-sm btn-outline-dark position-relative float-end m-2" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">Details</button>
+                                    </h4>
+                                    <div class="progress mb-4">
+                                        <div class="progress-bar bg-danger" aria-valuenow="@resultItem.PercentageVote.ToString("N0")" aria-valuemin="0" aria-valuemax="100" style="width: @resultItem.PercentageVote.ToString("N2")%;" data-bs-toggle="tooltip" data-bs-placement="top" title="@resultItem.PercentageVote.ToString("N2")%"><span class="visually-hidden">@resultItem.PercentageVote.ToString("N2")%</span></div>
+                                        &nbsp;<em class="text-black">@resultItem.PercentageVote.ToString("N2")%</em>
+                                    </div>
+                                    <div class="col">
+                                        <div class="collapse multi-collapse" id="@collapseId">
+                                            <div class="card card-body">
+                                                <!-- content-->
+                                                <div class="col-auto">
+                                                    <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th scope="col"><small>Account</small></th>
+                                                                <th scope="col"><small>Last voted</small></th>
+                                                                <th scope="col"><small>Actual votes</small></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @(
+                                                        (MarkupString)showDetailsAsHtml(resultItem.Option)
+                                                        )
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+
+                                                <!-- end content-->
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+
+                    </div>
+                </div>
+            </div>
+            }
+            <div class="col-lg-6 mb-4">
+                <div class="card rounded-3 shadow-sm">
+                    <div class="card-header py-3">
+                        <h4 class="my-0 fw-normal">Popular vote results</h4>
+                        @if (popularVoteIsLoading)
+                        {
+                            <span class="float-end">
+                                <HxSpinner Size="SpinnerSize.Regular" Color="ThemeColor.Danger"></HxSpinner>
+                            </span>
+
+
+                        }
+
+
+                    </div>
+                    <div class="card-body">
+                        @if (_popularVote is not null && _popularVote.Count > 0)
+                        {
+                            int positionpv = 0;
+                            foreach (var voteResult in _popularVote.GroupBy(x => x.VoterChoice).OrderByDescending(x => x.Count()).Select(x => x).ToList())
+                            {
+                                positionpv++;
+                                decimal optionVoteCounts = @_popularVote.Where(x => x.VoterChoice == voteResult.Key).Count();
+                                <h4 class="small fw-bold">
+                                    <span class="badge text-success"></span><span class="float-start">@String.Concat(@positionpv.ToString("D2"),". ",voteResult.Key)</span><span class="badge text-success"><em>@optionVoteCounts.ToString("N0") votes</em></span>
+
+                                </h4>
+                                <div class="progress mb-4">
+                                    <div class="progress-bar bg-danger" aria-valuenow="@(((optionVoteCounts * 100) / _popularVote.Count()).ToString("N2"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((optionVoteCounts * 100) / _popularVote.Count()).ToString("N2"))%" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((optionVoteCounts * 100) / _popularVote.Count()).ToString("N2"))%">
+                                        <span class="visually-hidden">@(((optionVoteCounts * 100) / _popularVote.Count()).ToString("N2"))%</span>
+                                    </div>
+                                    &nbsp;<em class="text-black">
+                                        @(((optionVoteCounts * 100) / _popularVote.Count()).ToString("N2"))%
+                                    </em>
+                                </div>
+                            }
+                        }
+
+
+
+
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        @if (_invalidatedVotingInfo is not null && _invalidatedVotingInfo.Count > 0)
         {
-            <div style="display:grid;place-items:center;margin-top:10%" class="mb-3">
-                <span class="loader">Fetching votes from XRPL</span>
+            <div class="row">
+                <div class="col">
+                    <div class="card rounded-3 shadow-sm">
+                        <div class="card-header py-3">
+                            <h4 class="my-0 fw-normal">Invalidated vote results</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"><small>Account</small></th>
+                                            <th scope="col"><small>Reason</small></th>
+                                            <th scope="col"><small>Voted on</small></th>
+                                            <th scope="col"><small>Index</small></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var info in _invalidatedVotingInfo)
+                                        {
+                                            <tr>
+                                                <td><small><a href="@($"accountinfo?acc={info.Address}")" target="_blank">@info.Address</a></small></td>
+                                                <td><small>@info.Reason</small></td>
+                                                <td><small>@info.Option</small></td>
+                                                <td><small>@info.LedgerIndex</small></td>
+
+                                            </tr>
+                                        }
+
+                                    </tbody>
+                                </table>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+                </div>
             </div>
 
         }
-        else
-        {
-            @if (_votingReport is not null && _votingReport.Details is not null && _votingReport.Details.Count > 0)
-            {
-                <div class="row">
-                    <div class="col-lg-6 mb-4">
-                        <div class="card rounded-3 shadow-sm">
-                            <div class="card-header py-3">
-                                <div class="row">
-                                    <div class="col">
-                                        <h4 class="my-0 fw-normal">Voting results</h4>
-                                    </div>
 
-                                    @if (_isLive)
-                                    {
-
-                                        <div class="col-auto">
-                                            <button class="btn btn-sm btn-warning position-relative float" type="button" @onclick="@Refresh">Refresh results</button>
-                                        </div>
-                                    }
-
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                @{
-                                    int position = 0;
-                                    foreach (var resultItem in _votingReport.Details.OrderByDescending(x => x.PercentageVote))
-                                    {
-                                        position++;
-                                        var collapseId = string.Concat("rv", Guid.NewGuid());
-                                        <h4 class="small fw-bold">
-                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@position.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalVotes.ToString("N0") votes</em></span>
-                                            <button class="btn btn-sm btn-outline-dark position-relative float-end m-2" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">Details</button>
-                                        </h4>
-                                        <div class="progress mb-4">
-                                            <div class="progress-bar bg-danger" aria-valuenow="@resultItem.PercentageVote.ToString("N0")" aria-valuemin="0" aria-valuemax="100" style="width: @resultItem.PercentageVote.ToString("N2")%;" data-bs-toggle="tooltip" data-bs-placement="top" title="@resultItem.PercentageVote.ToString("N2")%"><span class="visually-hidden">@resultItem.PercentageVote.ToString("N2")%</span></div>
-                                            &nbsp;<em class="text-black">@resultItem.PercentageVote.ToString("N2")%</em>
-                                        </div>
-                                        <div class="col">
-                                            <div class="collapse multi-collapse" id="@collapseId">
-                                                <div class="card card-body">
-                                                    <!-- content-->
-                                                    <div class="col-auto">
-                                                        <HxSwitch Text="sort details by votes" TextCssClass="text-small float" @bind-Value="_sortDetailsByVotes"></HxSwitch>
-                                                    </div>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th scope="col"><small>Account</small></th>
-                                                                    <th scope="col"><small>Last voted</small></th>
-                                                                    <th scope="col"><small>Actual votes</small></th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @((MarkupString)showDetailsAsHtml(resultItem.Option))
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-
-
-                                                    <!-- end content-->
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                }
-
-
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 mb-4">
-                        <div class="card rounded-3 shadow-sm">
-                            <div class="card-header py-3">
-                                <h4 class="my-0 fw-normal">Popular vote results</h4>
-
-                            </div>
-                            <div class="card-body">
-                                @{
-                                    int positionpv = 0;
-                                    @foreach (var resultItem in _votingReport.Details.OrderByDescending(x => x.TotalValidAccountsVoted))
-                                    {
-                                        positionpv++;
-                                        <h4 class="small fw-bold">
-                                            <span class="badge text-success"></span><span class="float-start">@String.Concat(@positionpv.ToString("D2"),". ",resultItem.Option)</span><span class="badge text-success"><em>@resultItem.TotalValidAccountsVoted.ToString("N0") votes</em></span>
-
-                                        </h4>
-                                        <div class="progress mb-4">
-                                            <div class="progress-bar bg-danger" aria-valuenow="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N0"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%"><span class="visually-hidden">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</span></div>
-                                            &nbsp;<em class="text-black">@(((resultItem.TotalValidAccountsVoted * 100) / _votingReport.UniqueAccountsVoted).ToString("N2"))%</em>
-                                        </div>
-
-                                    }
-                                }
-
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-
-            @if (_invalidatedVotingInfo is not null && _invalidatedVotingInfo.Count > 0)
-            {
-                <div class="row">
-                    <div class="col">
-                        <div class="card rounded-3 shadow-sm">
-                            <div class="card-header py-3">
-                                <h4 class="my-0 fw-normal">Invalidated vote results</h4>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col"><small>Account</small></th>
-                                                <th scope="col"><small>Last voted</small></th>
-                                                 <th scope="col"><small>Reason</small></th>
-                                                <th scope="col"><small>Voted on</small></th>
-                                                <th scope="col"><small>Index</small></th>                                               
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var info in _invalidatedVotingInfo)
-                                            {
-                                                <tr>
-                                                    <td><small><a href="@($"https://xrpscan.com/account/{info.Address}")" target="_blank">@info.Address</a></small></td>
-                                                    <td><small>@info.VoteRecordedDateTime?.ToString("F")</small></td>
-                                                    <td><small>@info.Reason</small></td>
-                                                    <td><small>@info.Option</small></td>
-                                                    <td><small>@info.LedgerIndex</small></td>
-                                                    
-                                                </tr>
-                                            }
-
-                                        </tbody>
-                                    </table>
-                                </div>
-
-
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            }
-        }
 
     </div>
 </div>
@@ -258,10 +289,23 @@
 
     private string _endPoint = "wss://xrplcluster.com/";
     private Ledger _latestLedgerIndex = new Ledger();
-    private List<VotingResults> _votingResultsActual = new();
+
+    //summary fields
+    decimal totalVotes { get; set; }
+    decimal totalAccounts { get; set; }
+
+    //Dictionary<string, DateTime> accounts = new Dictionary<string, DateTime>(); //used to track votes by account, used for popular vote calculation.
+    private List<VotingResults> _popularVote = new();
     private VotingResultReport _votingReport = new();
-    private bool _latestVotingFetched = false;
     private bool _isLive = false;
+
+    //Spinners
+    public bool popularVoteIsLoading = true;
+    public bool generalVoteIsLoading = true;
+
+    private string _warningMessage = string.Empty;
+
+
 
     //the table is currently sorted by
     private bool _sortDetailsByVotes = true;
@@ -272,7 +316,7 @@
     protected override async Task OnInitializedAsync()
     {
 
-        _latestVotingFetched = false;
+
         StateHasChanged();
         _votingReport.ProjectToken = projectToken;
         _votingReport.ProjectName = projectName;
@@ -280,10 +324,15 @@
         _votingReport.VotingId = votingId;
         _votingReport.VotingName = votingId?.HexToString();
         _isLive = (votingEndIndex == 0);
-        await GetLastVotingDetails();
-        await GetResultsFromXrpl();
+        await GetVotingDetails();
+        //await GetResultsFromXrpl();
 
-        _latestVotingFetched = true;
+
+        //get results
+        await RetrieveResultsFromXrpl();
+
+        //create actual voting report
+
         StateHasChanged();
 
     }
@@ -305,7 +354,7 @@
         _navManager.NavigateTo(_navManager.Uri, forceLoad: true);
     }
 
-    private async Task GetLastVotingDetails()
+    private async Task GetVotingDetails()
     {
         CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 0, 20)); //20 seconds
         var projectConfig = new ProjectConfig();
@@ -319,13 +368,13 @@
         Voting result;
         if (_isLive)
         {
-            result = await _votingManager.GetLastVoting(projectConfig, ctx);            
+            result = await _votingManager.GetLastVoting(projectConfig, ctx);
         }
         else
         {
             result = await _votingManager.GetVoting(projectConfig, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx);
         }
-         
+
         if (result is not null && result?.VotingOptions?.Count() > 0)
         {
             _votingReport.Details = new();
@@ -343,62 +392,172 @@
         }
     }
 
-    private async Task GetResultsFromXrpl()
+    private async Task RetrieveResultsFromXrpl()
     {
+        List<VotingResults> noAccountBalanceVotingResults = new();
 
-        CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
-        Dictionary<string, DateTime> accounts = new Dictionary<string, DateTime>();
-        //List<string> accounts = new();
-        List<VotingResults> rawVotingResults = new();
+        CancellationTokenSource popularVoteCTX = new CancellationTokenSource(new TimeSpan(0, 10, 0)); // set time-out to 10 minutes...
+        popularVoteIsLoading = true;
+        StateHasChanged();
+        await foreach (var result in GetPopularVotesFromXRPL(popularVoteCTX))
+        {
+
+            noAccountBalanceVotingResults.Add(result); //will be used to crete final report
+
+            var match = _popularVote.Where(x => x.VoterAddress == result.VoterAddress).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault();
+            if (match is null)
+            {
+                _popularVote.Add(result);
+            }
+            else
+            {
+                if (match.VoteRegistrationDateTime < result.VoteRegistrationDateTime)
+                {
+                    //update
+                    match.VoterChoice = result.VoterChoice;
+                    match.VoteRegistrationDateTime = result.VoteRegistrationDateTime;
+                }
+                //else ignore
+
+            }
+
+            StateHasChanged();
+        }
+
+        popularVoteIsLoading = false;
+        generalVoteIsLoading = true;
+        int accountsWithVotes = 0;
+        int totalVotesCastedOnInvalidOption = 0;
+
+        if(_popularVote.Count > 1000)
+        {
+            _warningMessage = "The operation of retrieving account balances, might take up to an hour to finish as we need to process more than 1000 lookups from the ledger which will result in your connection being throttled (delayed). A future version will resolve this issue";
+        }
+        else
+        {
+            _warningMessage = string.Empty;
+        }
+
+        await foreach (var result in GetAccountBalanceFromXRPL())
+        {
+            var workingPopularVote = _popularVote.Where(x => x.VoterAddress == result.Address).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault(); ;
+
+            if (!result.IsValid)
+            {
+                _invalidatedVotingInfo.Add(new InvalidVotingsReport()
+                    {
+                        Address = result.Address,
+                        LedgerIndex = result.LedgerIndex,
+                        VoteRecordedDateTime = result.LastRecordedVoteDateTime,
+                        Reason = result.InvalidReason,
+                        TotalVotes = result.Balance,
+                        Option = workingPopularVote?.VoterChoice
+                    });
+            }
+
+            //now update the last know voting date/time (should allign with the ledger index)
+            result.LastRecordedVoteDateTime = workingPopularVote?.VoteRegistrationDateTime.ToLocalTime();
+
+
+            //add item to vote
+            var selectedOption = _votingReport.Details.FirstOrDefault(x => x.Option == workingPopularVote?.VoterChoice);
+            if (selectedOption is not null)
+            {
+                selectedOption.votingAccountDetails.Add(result);
+                accountsWithVotes++; //actual valid accounts as they have a vote count > 0
+            }
+            else
+            {
+                Console.WriteLine($"{workingPopularVote?.VoterChoice} not found");
+                _invalidatedVotingInfo.Add(new InvalidVotingsReport()
+                    {
+                        Address = result.Address,
+                        LedgerIndex = result.LedgerIndex,
+                        VoteRecordedDateTime = result.LastRecordedVoteDateTime,
+                        Reason = $"{workingPopularVote?.VoterChoice} not part of valid options",
+                        TotalVotes = result.Balance,
+                        Option = workingPopularVote?.VoterChoice
+                    });
+
+                totalVotesCastedOnInvalidOption++;
+            }
+
+            //summarize
+            var totalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
+            _votingReport.TotalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
+            _votingReport.UniqueValidAccountsVoted = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => x.IsValid);
+
+            _totalInvalidatedVotes = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => (!x.IsValid)) + totalVotesCastedOnInvalidOption;
+
+
+            _votingReport.UniqueAccountsVoted = _popularVote.Select(x => x.VoterAddress).Distinct().Count();
+            _votingReport.TotalAccountsVoted = _popularVote.Select(x => x.VoterAddress).Count();
+            foreach (var detailItem in _votingReport.Details)
+            {
+                detailItem.TotalVotes = detailItem.votingAccountDetails.Sum(x => x.Balance);
+                detailItem.TotalValidAccountsVoted = detailItem.votingAccountDetails.Count;
+                if (_votingReport.TotalVotesCast > 0)
+                {
+                    detailItem.PercentageVote = (detailItem.TotalVotes * 100) / _votingReport.TotalVotesCast;
+                }
+
+            }
+            StateHasChanged();
+        }
+
+
+
+
+
+
+
+        ////summarize
+        //var totalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
+        //_votingReport.TotalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
+        //_votingReport.UniqueValidAccountsVoted = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => x.IsValid);
+
+        //_totalInvalidatedVotes = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => (!x.IsValid)) + totalVotesCastedOnInvalidOption;
+
+
+        //_votingReport.UniqueAccountsVoted = _popularVote.Select(x=>x.VoterAddress).Distinct().Count();
+        //_votingReport.TotalAccountsVoted = _popularVote.Select(x => x.VoterAddress).Count();
+        //foreach (var detailItem in _votingReport.Details)
+        //{
+        //    detailItem.TotalVotes = detailItem.votingAccountDetails.Sum(x => x.Balance);
+        //    detailItem.TotalValidAccountsVoted = detailItem.votingAccountDetails.Count;
+        //    if (_votingReport.TotalVotesCast > 0)
+        //    {
+        //        detailItem.PercentageVote = (detailItem.TotalVotes * 100) / _votingReport.TotalVotesCast;
+        //    }
+
+        //}
+
+        // StateHasChanged();
+        generalVoteIsLoading = false;
+    }
+
+    private async IAsyncEnumerable<VotingResults> GetPopularVotesFromXRPL(CancellationTokenSource ctx)
+    {
 
         if (_isLive)
         {
-            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _endPoint))
+            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _endPoint))
             {
-                rawVotingResults.Add(result);
-                //if(accounts.ContainsKey(result.VoterAddress))
-                //{
-                //if timestamp is newer, do an update
-                if (accounts.TryGetValue(result.VoterAddress, out DateTime votedDateTimeStamp))
-                {
-                    if (votedDateTimeStamp < result.VoteRegistrationDateTime)
-                    {
-                        //update
-                        accounts[result.VoterAddress] = result.VoteRegistrationDateTime;
-                    }
-                }
-                else
-                {
-                    //just add
-                    accounts.Add(result.VoterAddress, result.VoteRegistrationDateTime);
-                }
-                //}
-                //accounts.Add(result.VoterAddress);
+                yield return result;
+
             }
         }
         else
         {
-            await foreach (var result in _votingManager.GetVotingResults(votingAccount, votingControllerAccount, votingId, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
+            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, votingId, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
             {
-                rawVotingResults.Add(result);
-                //if timestamp is newer, do an update
-                if (accounts.TryGetValue(result.VoterAddress, out DateTime votedDateTimeStamp))
-                {
-                    if (votedDateTimeStamp < result.VoteRegistrationDateTime)
-                    {
-                        //update
-                        accounts[result.VoterAddress] = result.VoteRegistrationDateTime;
-                    }
-                }
-                else
-                {
-                    //just add
-                    accounts.Add(result.VoterAddress, result.VoteRegistrationDateTime);
-                }
-                //accounts.Add(result.VoterAddress);
+                yield return result;
             }
         }
+    }
 
+    private async IAsyncEnumerable<AccountBalance> GetAccountBalanceFromXRPL()
+    {
         //Get ledger information
         //get account balances
         var ledgerCancellationToken = new CancellationTokenSource(new TimeSpan(0, 0, 20)); //5 minutes
@@ -413,101 +572,17 @@
             _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken, (uint)votingEndIndex, _endPoint);
         }
 
-        //get account balances
-        ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
 
-        var accountsWithVotes = 0;
-        int totalVotesCastedOnInvalidOption = 0;
-        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsync(accounts.Keys.ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, ctx, _endPoint))
+
+
+        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsyncEnumerable(_popularVote.Select(x => x.VoterAddress).Distinct().ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, _endPoint))
         {
 
-
-            try
-            {
-                var optionVotedOn = rawVotingResults.Where(x => x.VoterAddress == balanceResult.Address).OrderByDescending(x => x.VoteRegistrationIndex).FirstOrDefault().VoterChoice;
-
-                if (!balanceResult.IsValid)
-                {
-                    _invalidatedVotingInfo.Add(new InvalidVotingsReport()
-                        {
-                            Address = balanceResult.Address,
-                            LedgerIndex = balanceResult.LedgerIndex,
-                            VoteRecordedDateTime = balanceResult.LastRecordedVoteDateTime,
-                            Reason = balanceResult.InvalidReason,
-                            TotalVotes = balanceResult.Balance,
-                            Option = optionVotedOn
-                        });
-                }
-
-                //now update the last know voting date/time (should allign with the ledger index)
-                if (accounts.TryGetValue(balanceResult.Address, out DateTime lastVoteRecordedTimeStamp))
-                {
-
-                    balanceResult.LastRecordedVoteDateTime = lastVoteRecordedTimeStamp.ToLocalTime();
-                }
-
-                //add item to vote
-                var selectedOption = _votingReport.Details.FirstOrDefault(x => x.Option == optionVotedOn);
-                if (selectedOption is not null)
-                {
-                    selectedOption.votingAccountDetails.Add(balanceResult);
-                    accountsWithVotes++; //actual valid accounts as they have a vote count > 0
-                }
-                else
-                {
-                    Console.WriteLine($"{optionVotedOn} not found");
-                    _invalidatedVotingInfo.Add(new InvalidVotingsReport()
-                        {
-                            Address = balanceResult.Address,
-                            LedgerIndex = balanceResult.LedgerIndex,
-                            VoteRecordedDateTime = balanceResult.LastRecordedVoteDateTime,
-                            Reason = $"{optionVotedOn} not part of valid options",
-                            TotalVotes = balanceResult.Balance,
-                            Option = optionVotedOn
-                        });
-
-                    totalVotesCastedOnInvalidOption++;
-                }
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-
-
+            yield return balanceResult;
 
 
         }
-
-        //summarize
-        var totalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
-        _votingReport.TotalVotesCast = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Sum(x => x.Balance);
-        _votingReport.UniqueValidAccountsVoted = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => x.IsValid);
-
-        _totalInvalidatedVotes = _votingReport.Details.SelectMany(x => x.votingAccountDetails).Count(x => (!x.IsValid)) + totalVotesCastedOnInvalidOption;
-
-
-        _votingReport.UniqueAccountsVoted = accounts.Distinct().Count();
-        _votingReport.TotalAccountsVoted = accounts.Count();
-        foreach (var detailItem in _votingReport.Details)
-        {
-            detailItem.TotalVotes = detailItem.votingAccountDetails.Sum(x => x.Balance);
-            detailItem.TotalValidAccountsVoted = detailItem.votingAccountDetails.Count;
-            if (_votingReport.TotalVotesCast > 0)
-            {
-                detailItem.PercentageVote = (detailItem.TotalVotes * 100) / _votingReport.TotalVotesCast;
-            }
-
-        }
-
-
-
-
-
     }
-
-
-
 
     private string showDetailsAsHtml(string option)
     {
