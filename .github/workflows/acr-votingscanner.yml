@@ -3,29 +3,13 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+    paths: ['src/VotingOnTheBlockChain/VotingScanner/**']
 env:
   IMAGE_NAME: votingscanner  
   RESOURCE_GROUP: common
   LOCATION: westus
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    # Set job outputs to values from filter step
-    outputs:
-      build: ${{ steps.filter.outputs.build }}   
-    steps:
-    # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v2.11.1
-      id: filter
-      with:
-        filters: |
-          build:
-            - 'src/**'
-          
-  # JOB to build and test backend code
   build:
-    needs: changes
-    if: ${{ needs.changes.outputs.build == 'true' }}
     runs-on: ubuntu-latest
     steps:   
       - name: Checkout repository
