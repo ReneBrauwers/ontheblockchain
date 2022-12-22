@@ -28,7 +28,9 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          docker build src/VotingOnTheBlockChain/VotingProxy/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }} -t servian.azurecr.io/${{ env.IMAGE_NAME }}:latest}
-          docker push servian.azurecr.io/${{ env.IMAGE_NAME }} --all-tags
+          docker build src/VotingOnTheBlockChain/VotingProxy/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+          docker push servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }}
+          docker build src/VotingOnTheBlockChain/VotingProxy/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          docker push servian.azurecr.io/${{ env.IMAGE_NAME }}:latest
     outputs:
       buildversion: ${{ steps.tag.outputs.content }}
