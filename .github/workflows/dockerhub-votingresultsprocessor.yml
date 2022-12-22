@@ -34,6 +34,7 @@ jobs:
           context: src/VotingOnTheBlockChain
           file: src/VotingOnTheBlockChain/Dockerfile_VotingResultsProcessor
           push: true
-          tags: renebrauwers/demo001:latest        
+          tags: |
+              renebrauwers/votingresultsprocessor:latest
     outputs:
       buildversion: ${{ steps.tag.outputs.content }}
