@@ -5,7 +5,8 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["src/VotingOnTheBlockChain/VotingScanner/VotingScanner.csproj", "VotingScanner/"]
+COPY ["./VotingScanner.csproj", "VotingScanner/"]
+COPY ["../Common/Common.csproj", "Common/"]
 RUN dotnet restore "VotingScanner/VotingScanner.csproj"
 COPY . .
 WORKDIR "/src/VotingScanner"
