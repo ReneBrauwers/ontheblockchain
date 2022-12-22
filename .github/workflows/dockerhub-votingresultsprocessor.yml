@@ -36,6 +36,6 @@ jobs:
           push: true
           tags: |
               renebrauwers/votingresultsprocessor:latest
-              renebrauwers/votingresultsprocessor:0.0.1
+              renebrauwers/votingresultsprocessor:${{ steps.tag.outputs.content }} 
     outputs:
       buildversion: ${{ steps.tag.outputs.content }}
