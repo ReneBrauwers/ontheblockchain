@@ -28,7 +28,7 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          docker build -f 'src/VotingOnTheBlockChain/Dockerfile_VotingScanner' src/VotingOnTheBlockChain/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }} -t servian.azurecr.io/${{ env.IMAGE_NAME }}:latest}
+          docker build -f 'src/VotingOnTheBlockChain/Dockerfile_VotingScanner' src/VotingOnTheBlockChain/ -t servian.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.content }} -t servian.azurecr.io/${{ env.IMAGE_NAME }}:latest
           docker push servian.azurecr.io/${{ env.IMAGE_NAME }} --all-tags
     outputs:
       buildversion: ${{ steps.tag.outputs.content }}
