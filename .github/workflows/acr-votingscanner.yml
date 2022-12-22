@@ -20,7 +20,7 @@ jobs:
       with:
         filters: |
           build:
-            - 'src/VotingOnTheBlockChain/VotingScanner/**'
+            - 'src/**'
           
   # JOB to build and test backend code
   build:
