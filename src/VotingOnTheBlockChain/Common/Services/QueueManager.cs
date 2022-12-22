@@ -38,6 +38,45 @@ namespace VotingScanner.Services
             return isError;
         }
 
+        public async Task<T> DeQueueMessage<T>(int count, string signingkey, CancellationTokenSource cts)
+        {           
+            T? result = default;
+            try
+            {
+                //get queue client service client
+                var queueLink = string.Concat("https://", _configuration["RemoteConfigHostQueueStorage"], "/", _configuration["Queuename"], "?", signingkey);
+                QueueClient queue = new QueueClient(new Uri(queueLink));
+                var message = await queue.ReceiveMessageAsync(new TimeSpan(0, 1, 0), cts.Token);
+                if(!message.GetRawResponse().IsError)
+                {
+                    if(message.Value is null)
+                    {
+                        return result;
+                    }
+
+                    result = message.Value.Body.ToObjectFromJson<T>();
+                    var deleteResult = await queue.DeleteMessageAsync(message.Value.MessageId, message.Value.PopReceipt, cts.Token);
+                    if(deleteResult.IsError) 
+                    { 
+                        //cancel processing
+                        cts.Cancel(true);
+                        
+                    }
+                   
+                }
+
+
+                 
+            }
+            catch
+            {
+                //cancel processing
+                cts.Cancel(true);
+            }
+
+            return result;
+        }
+
 
     }
 }

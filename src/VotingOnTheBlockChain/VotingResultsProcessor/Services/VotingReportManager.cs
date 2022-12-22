@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using VotingScanner.Services;
 
 namespace VotingResultsProcessor.Services
 {
@@ -15,6 +16,8 @@ namespace VotingResultsProcessor.Services
     {
         protected readonly IConfiguration _configuration;
         private VotingManager _votingManager;
+        private QueueManager _queueManager;
+        private PersistantStorageManager _persistantStorageManager;
         private Voting _voting;
 
 
@@ -22,9 +25,45 @@ namespace VotingResultsProcessor.Services
         {
             _configuration = configuration;
             _votingManager = new VotingManager(_configuration);
+            _queueManager = new QueueManager(_configuration);
+            _persistantStorageManager = new PersistantStorageManager(_configuration);
         }
 
-        public async Task<VotingResultReport> CreateVotingReport(Voting voting)
+        public async Task Start(CancellationTokenSource cts)
+        {
+            
+            while(!cts.Token.IsCancellationRequested)
+            {
+                await VotingProcessor(cts);
+            }
+        }
+
+        private async Task VotingProcessor(CancellationTokenSource cts)
+        {
+            try
+            {
+                var votingInformation = await _queueManager.DeQueueMessage<Voting>(1, _configuration["STORAGE_ACCOUNT_QUEUES_SIGNATURE"], cts);
+                if (votingInformation != null)
+                {
+                    var votingReport = await CreateVotingReport(votingInformation);
+
+                    Console.WriteLine("Persist voting report");
+                    var reportFileName = string.Concat(votingInformation.ProjectName, "-", votingInformation.ProjectToken, "-", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, ".json");
+                    await _persistantStorageManager.Upload<VotingResultReport>(_configuration["ConfigFolderName"], reportFileName, votingReport, _configuration["STORAGE_ACCOUNT_BLOBCONTAINER_SIGNATURE"]);
+                }
+                else
+                {
+                    cts.Cancel(false); //exit by cancelling
+                }
+            }
+            catch
+            {
+                cts.Cancel(true);
+            }
+           
+        }
+
+        private async Task<VotingResultReport> CreateVotingReport(Voting voting)
         {
             var votingReport = new VotingResultReport();
             if (_voting is not null)
@@ -133,7 +172,6 @@ namespace VotingResultsProcessor.Services
             return votingReport;
           
         }
-
 
         private async Task<List<VotingResults>> GetPopularVotesFromXRPL()
         {
