@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "VotingResultsProcessor": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
