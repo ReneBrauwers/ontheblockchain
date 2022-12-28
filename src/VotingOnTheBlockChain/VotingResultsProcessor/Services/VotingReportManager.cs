@@ -48,7 +48,7 @@ namespace VotingResultsProcessor.Services
                     var votingReport = await CreateVotingReport(votingInformation);
 
                     Console.WriteLine("Persist voting report");
-                    var reportFileName = string.Concat(votingInformation.ProjectName, "-", votingInformation.ProjectToken, "-", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, ".json");
+                    var reportFileName = string.Concat(votingInformation.ProjectName, "/", votingInformation.ProjectToken, "/", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, ".json");
                     await _persistantStorageManager.Upload<VotingResultReport>(_configuration["ConfigFolderName"], reportFileName, votingReport, _configuration["STORAGE_ACCOUNT_BLOBCONTAINER_SIGNATURE"]);
                 }
                 else

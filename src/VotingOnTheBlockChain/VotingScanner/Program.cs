@@ -110,7 +110,7 @@ if (lastRecordedVotingIndexesByProjectToken.Count > 0)
 Console.WriteLine("Connect to XRPL and retrieve votings");
 
 //clean sheet, as such start 
-var ctx = new CancellationTokenSource(new TimeSpan(0, 1, 0));
+var ctx = new CancellationTokenSource(new TimeSpan(1, 0, 0));
 await foreach (var result in _votingManager.GetVotings(projectConfigurations, ctx, rippledServer))
 {
     storedVotingInformation.Add(result);
@@ -127,15 +127,15 @@ Console.WriteLine("Get votings for which we need to get the results and publish 
 Dictionary<string, bool> FilesToCheckForExistance = new Dictionary<string, bool>();
 storedVotingInformation?.ForEach(x =>
 {
-    FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "-", x.ProjectToken, "-", x.VotingId,"-", x.VotingStartIndex, ".json")), false);
-
+    // FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "-", x.ProjectToken, "-", x.VotingId,"-", x.VotingStartIndex, ".json")), false);
+    FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, ".json")), false);
 });
 
 await _persistantStorageManager.FilesExistCheck(config["ConfigFolderName"], FilesToCheckForExistance, storageAccountBlobContainerKey);
 
 foreach (var outstandingVotings in FilesToCheckForExistance.Where(x => x.Value == false))
 {
-    var selectedVoting = storedVotingInformation.Where(x => (string.Concat(string.Concat(x.ProjectName, "-", x.ProjectToken, "-", x.VotingId, "-", x.VotingStartIndex, ".json")) == outstandingVotings.Key)).FirstOrDefault();
+    var selectedVoting = storedVotingInformation.Where(x => (string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, ".json")) == outstandingVotings.Key)).FirstOrDefault();
     if (selectedVoting is not null)
     {
         await _queueManager.QueueMessage<Voting>(selectedVoting, storageAccountQueueKey);
