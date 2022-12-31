@@ -32,10 +32,9 @@ var _votingReportManager = sp.GetRequiredService<VotingReportManager>();
 
 
 Console.WriteLine("Start process to create the voting Report");
-var cts = new CancellationTokenSource(new TimeSpan(1, 0, 0));
-await _votingReportManager.Start(cts);
 
- Console.WriteLine("Processing finished, shutting down");
+await _votingReportManager.Start();
+Console.WriteLine("Done");
  
 
 

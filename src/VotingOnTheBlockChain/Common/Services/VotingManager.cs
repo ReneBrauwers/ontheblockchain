@@ -1109,6 +1109,7 @@ namespace Common.Services
                                                                             voteResult.VoteRegistrationIndex = txs.GetProperty("inLedger").GetUInt32();
                                                                             voteResult.VoteRegistrationDateTime = txs.GetProperty("date").GetInt32().rippleEpochToDateUTC();
                                                                             votingResults.Add(voteResult);
+                                                                            Console.WriteLine($"{voteResult.VoterChoice} recorded");
                                                                             //yield return voteResult;
                                                                         }
                                                                     }
@@ -1460,7 +1461,7 @@ namespace Common.Services
                             bool retryConnect = true;
                             while (retryConnect)
                             {
-                                Console.WriteLine($"socket state: {clientWebsocket.State.ToString()}");
+                              
                                 if (clientWebsocket.State >= WebSocketState.Closed || clientWebsocket.State == WebSocketState.None)
                                 {
                                     await clientWebsocket.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
@@ -1468,7 +1469,7 @@ namespace Common.Services
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Retry socket status check in 5 seconds");
+                                   
                                     await Task.Delay(TimeSpan.FromSeconds(5));
                                 }
                             }
@@ -1498,7 +1499,7 @@ namespace Common.Services
 
 
                 }
-                Console.WriteLine("Pause processing for 15 seconds");
+               
                 await Task.Delay(TimeSpan.FromSeconds(15));
                 currentPage++;
             }
@@ -1558,7 +1559,7 @@ namespace Common.Services
                             bool retryConnect = true;
                             while (retryConnect)
                             {
-                                Console.WriteLine($"socket state: {clientWebsocket.State.ToString()}");
+                               
                                 if (clientWebsocket.State >= WebSocketState.Closed || clientWebsocket.State == WebSocketState.None)
                                 {
                                     await clientWebsocket.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
@@ -1566,7 +1567,7 @@ namespace Common.Services
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Retry socket status check in 5 seconds");
+                                 
                                     await Task.Delay(TimeSpan.FromSeconds(5));
                                 }
                             }
@@ -1939,6 +1940,8 @@ namespace Common.Services
                                             WorkItems[correlationId] = true; //indicates we completed it
                                         }
                                         accountBalances.Add(accountBalanceResult);
+                                        Console.WriteLine($"{accountBalanceResult.Address} balance received");
+
                                       
 
 
@@ -1963,6 +1966,7 @@ namespace Common.Services
 
 
                 }
+                Console.WriteLine($"{WorkItems.Where(x => x.Value == false).Count()} workitems remaining");
             } while (WorkItems.Where(x => x.Value == false).Count() > 0);
 
             return accountBalances;

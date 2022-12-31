@@ -19,6 +19,7 @@ namespace VotingResultsProcessor.Services
         private QueueManager _queueManager;
         private PersistantStorageManager _persistantStorageManager;
         private Voting _voting;
+        
 
 
         public VotingReportManager(IConfiguration configuration)
@@ -29,37 +30,45 @@ namespace VotingResultsProcessor.Services
             _persistantStorageManager = new PersistantStorageManager(_configuration);
         }
 
-        public async Task Start(CancellationTokenSource cts)
+        public async Task Start()
         {
             
-            while(!cts.Token.IsCancellationRequested)
+            
+            while(true)
             {
-                await VotingProcessor(cts);
+                if(await VotingProcessor())
+                {                   
+                    break;
+                }
             }
+
+            
         }
 
-        private async Task VotingProcessor(CancellationTokenSource cts)
+        private async Task<bool> VotingProcessor()
         {
+          
             try
             {
-                var votingInformation = await _queueManager.DeQueueMessage<Voting>(1, _configuration["STORAGE_ACCOUNT_QUEUES_SIGNATURE"], cts);
+                var votingInformation = await _queueManager.DeQueueMessage<Voting>(1, _configuration["STORAGE_ACCOUNT_QUEUES_SIGNATURE"]);
                 if (votingInformation != null)
                 {
+                    Console.WriteLine($"processing {votingInformation.ProjectName} ${votingInformation.ProjectToken} - {votingInformation.VotingName}");
                     var votingReport = await CreateVotingReport(votingInformation);
-
-                    Console.WriteLine("Persist voting report");
                     var reportFileName = string.Concat(votingInformation.ProjectName, "/", votingInformation.ProjectToken, "/", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, ".json");
                     await _persistantStorageManager.Upload<VotingResultReport>(_configuration["ConfigFolderName"], reportFileName, votingReport, _configuration["STORAGE_ACCOUNT_BLOBCONTAINER_SIGNATURE"]);
                 }
                 else
                 {
-                    cts.Cancel(false); //exit by cancelling
+                    return true; // no more data, return true signalling to exit
                 }
             }
             catch
             {
-                cts.Cancel(true);
+                return true; //error occured, return true signalling to exit
             }
+
+            return false; //not ready to exit as we have more data to process.
            
         }
 
