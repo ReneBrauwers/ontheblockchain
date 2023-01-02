@@ -1109,7 +1109,7 @@ namespace Common.Services
                                                                             voteResult.VoteRegistrationIndex = txs.GetProperty("inLedger").GetUInt32();
                                                                             voteResult.VoteRegistrationDateTime = txs.GetProperty("date").GetInt32().rippleEpochToDateUTC();
                                                                             votingResults.Add(voteResult);
-                                                                            Console.WriteLine($"{voteResult.VoterChoice} recorded");
+                                                                          
                                                                             //yield return voteResult;
                                                                         }
                                                                     }
@@ -1940,7 +1940,7 @@ namespace Common.Services
                                             WorkItems[correlationId] = true; //indicates we completed it
                                         }
                                         accountBalances.Add(accountBalanceResult);
-                                        Console.WriteLine($"{accountBalanceResult.Address} balance received");
+
 
                                       
 

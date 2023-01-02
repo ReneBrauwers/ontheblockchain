@@ -45,7 +45,7 @@ namespace VotingScanner.Services
             //get queue client service client
             var queueLink = string.Concat("https://", _configuration["RemoteConfigHostQueueStorage"], "/", _configuration["Queuename"], "?", signingkey);
             QueueClient queue = new QueueClient(new Uri(queueLink));
-            var message = await queue.ReceiveMessageAsync(new TimeSpan(0, 1, 0));
+            var message = await queue.ReceiveMessageAsync();
             if (!message.GetRawResponse().IsError)
             {
                 if (message.Value is null)
@@ -57,6 +57,10 @@ namespace VotingScanner.Services
                 var deleteResult = await queue.DeleteMessageAsync(message.Value.MessageId, message.Value.PopReceipt);
 
 
+            }
+            else
+            {
+                Console.WriteLine($"Error occured dequeuing message: {message.GetRawResponse().Status} - {message.GetRawResponse().ReasonPhrase}");
             }
 
 
