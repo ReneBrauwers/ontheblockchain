@@ -11,6 +11,7 @@ namespace Common.Services
     public sealed class VotingManager
     {
         private Dictionary<string,bool> rippledServers= new Dictionary<string,bool>();
+        private string _baseConfigPath { get; set; }
         //Dictionay List<string> endpoints = new List<string>()
         //    {
         //     new string ("wss://xrplcluster.com") ,
@@ -22,8 +23,8 @@ namespace Common.Services
 
         public VotingManager(IConfiguration config)
         {
-           
-            foreach(var item in config["websocketAddress"].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries))
+            _baseConfigPath = string.Concat("https://", config["RemoteConfigHostBlobStorage"], "/", config["ConfigFolderName"], "/");
+            foreach (var item in config["websocketAddress"].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries))
             {
                 rippledServers.Add(item, true);
             }
@@ -164,13 +165,14 @@ namespace Common.Services
                                                                         if (voting is not null && voting.VotingEndIndex > 0)
                                                                         {
 
-                                                                            var votingId = tx.GetProperty("Memos")[0].GetProperty("Memo").GetProperty("MemoData").GetString();
+                                                                            var votingId = tx.GetProperty("Memos")[0].GetProperty("Memo").GetProperty("MemoData").GetString();                                                                            
                                                                             voting.VotingStartIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                            var votingResultFile = voting.VotingResultFile.Replace("[votingid]", votingId).Replace("[startindex]", voting.VotingStartIndex.ToString());
                                                                             voting.VotingId = votingId;
                                                                             voting.VotingName = votingId.HexToString();
                                                                             voting.ProjectToken = project.ProjectToken;
                                                                             voting.ProjectName = project.ProjectName;
-                                                                            //voting.VotingDataReference = String.Empty;
+                                                                            voting.VotingResultFile = votingResultFile;
                                                                             voting.IssuerAccount = project.IssuerAccount;
                                                                             voting.VotingAccount = tx.GetProperty("Destination").GetString();
                                                                             voting.VotingControllerAccount = project.ControllerAccount;
@@ -193,6 +195,8 @@ namespace Common.Services
                                                                             if (voting is not null)
                                                                             {
                                                                                 voting.VotingEndIndex = tx.GetProperty("ledger_index").GetUInt32();
+                                                                                voting.VotingResultFile = string.Concat(_baseConfigPath, project.ProjectName, "/", project.ProjectToken, "/[votingid]-[startindex]-", tx.GetProperty("ledger_index").GetUInt32(), ".json");
+                                                                               // voting.VotingResultFile = voting.VotingResultFile.Replace("-0.json", string.Concat("-", tx.GetProperty("ledger_index").GetUInt32(), ".json"));
                                                                                 voting.IsLive = false;
 
 
@@ -268,6 +272,8 @@ namespace Common.Services
 
             //return voting;
         }
+
+
 
         /// <summary>
         /// Operation which will retrieve the last voting found
@@ -1816,7 +1822,11 @@ namespace Common.Services
                     } while (!result.EndOfMessage);
 
                     if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        Console.WriteLine("Websocket has been closed, exiting");
                         break;
+                    }
+                       
 
                     ms.Seek(0, SeekOrigin.Begin);
                     using (var reader = new StreamReader(ms, Encoding.UTF8))

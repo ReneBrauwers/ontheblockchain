@@ -47,24 +47,28 @@ namespace VotingResultsProcessor.Services
 
         private async Task<bool> VotingProcessor()
         {
-          
+           
             try
-            {
-                var votingInformation = await _queueManager.DeQueueMessage<Voting>(1, _configuration["STORAGE_ACCOUNT_QUEUES_SIGNATURE"]);
-                if (votingInformation != null)
-                {
-                    Console.WriteLine($"processing {votingInformation.ProjectName} ${votingInformation.ProjectToken} - {votingInformation.VotingName}");
-                    var votingReport = await CreateVotingReport(votingInformation);
-                    var reportFileName = string.Concat(votingInformation.ProjectName, "/", votingInformation.ProjectToken, "/", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, ".json");
-                    await _persistantStorageManager.Upload<VotingResultReport>(_configuration["ConfigFolderName"], reportFileName, votingReport, _configuration["STORAGE_ACCOUNT_BLOBCONTAINER_SIGNATURE"]);
-                }
-                else
-                {
-                    return true; // no more data, return true signalling to exit
-                }
+            {              
+                    var votingInformation = await _queueManager.DeQueueMessage<Voting>(1, _configuration["STORAGE_ACCOUNT_QUEUES_SIGNATURE"]);
+                    if (votingInformation != null)
+                    {
+                        Console.WriteLine($"processing {votingInformation.ProjectName} ${votingInformation.ProjectToken} - {votingInformation.VotingName}");
+                        var votingReport = await CreateVotingReport(votingInformation);
+                        var reportFileName = string.Concat(votingInformation.ProjectName, "/", votingInformation.ProjectToken, "/", votingInformation.VotingId, "-", votingInformation.VotingStartIndex, "-", votingInformation.VotingEndIndex, ".json");
+                        await _persistantStorageManager.Upload<VotingResultReport>(_configuration["ConfigFolderName"], reportFileName, votingReport, _configuration["STORAGE_ACCOUNT_BLOBCONTAINER_SIGNATURE"]);
+                    }
+                    else
+                    {
+                    Console.WriteLine("No more voting data, exiting");
+                        return true; // no more data, return true signalling to exit
+                    }               
+
+
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine(ex.ToString());
                 return true; //error occured, return true signalling to exit
             }
 
@@ -81,6 +85,14 @@ namespace VotingResultsProcessor.Services
             }
 
             _voting = voting;
+
+            //copy over project and voting information
+            votingReport.ProjectToken = voting.ProjectToken;
+            votingReport.ProjectName = voting.ProjectName;
+            votingReport.VotingId = voting.VotingId;
+            votingReport.VotingName = voting.VotingName;
+            votingReport.LedgerStartIndex = voting.VotingStartIndex;
+            votingReport.LedgerEndIndex = voting.VotingEndIndex;
 
             //add voting options to report
             if (_voting?.VotingOptions?.Count() > 0)
@@ -191,8 +203,30 @@ namespace VotingResultsProcessor.Services
 
         private async Task<List<AccountBalance>> GetAccountBalanceFromXRPL(List<string> addresses)
         {
-            CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(4, 0, 0)); // max timeout is 4 hr
-            return await _votingManager.GetVoterBalancesAsync(addresses, _voting.IssuerAccount, _voting.VotingEndIndex, _voting.ProjectToken, ctx, _configuration["websocketAddress"]);
+            CancellationTokenSource ctx;// = new CancellationTokenSource(new TimeSpan(0, 20, 0)); // max timeout is 30 minutes
+            var returnData = new List<AccountBalance>();
+            //let's use paging; process 100 addresses at a time.
+            var currentPage = 0;
+            var takesPages = 100;
+            var totalPages = Math.Ceiling(Convert.ToDecimal(addresses.Count() / Convert.ToDecimal(takesPages)));
+
+            while (currentPage < totalPages)
+            {
+                Console.WriteLine($"data retrieval batch {currentPage+1} / {totalPages}");
+                var itemsToSkip = currentPage * takesPages;
+                var addressBatch = addresses.Skip(itemsToSkip).Take(takesPages).ToList();
+                ctx = new CancellationTokenSource(new TimeSpan(0, 10, 0)); // max timeout is 10 minutes
+                var intermediateResult = await _votingManager.GetVoterBalancesAsync(addressBatch, _voting.IssuerAccount, _voting.VotingEndIndex, _voting.ProjectToken, ctx, _configuration["websocketAddress"]);
+
+                if(intermediateResult is not null && intermediateResult.Count > 0) 
+                {
+                    returnData.AddRange(intermediateResult);
+                }
+
+                currentPage++;
+            }
+
+            return returnData;
 
         }
     }

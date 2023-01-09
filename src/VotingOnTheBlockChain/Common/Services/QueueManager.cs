@@ -48,13 +48,15 @@ namespace VotingScanner.Services
             var message = await queue.ReceiveMessageAsync();
             if (!message.GetRawResponse().IsError)
             {
+
                 if (message.Value is null)
                 {
                     return result;
                 }
 
-                result = message.Value.Body.ToObjectFromJson<T>();
                 var deleteResult = await queue.DeleteMessageAsync(message.Value.MessageId, message.Value.PopReceipt);
+                result = message.Value.Body.ToObjectFromJson<T>();
+                
 
 
             }

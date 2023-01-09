@@ -1,9 +1,12 @@
 ﻿using Blazored.LocalStorage;
+using Common.Extensions;
 using Common.Models.Config;
 using Common.Models.Report;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
+using System.Data.SqlTypes;
 using System.Net.Http.Json;
+using System.Xml;
 
 namespace Common.Services
 {
@@ -105,7 +108,7 @@ namespace Common.Services
                     {
                         lastArchivedVotingConfigIndex = new Dictionary<string, uint>();
                     }
-                   
+
                     lastArchivedVotingConfigIndex.Add(String.Concat(project.ProjectName, "-", project.ProjectToken), 0);
                 }
                 isProjectSettingConfigStale = false;
@@ -416,40 +419,6 @@ namespace Common.Services
 
 
         }
-        private async Task<List<VotingResultReport>> DownloadArchivedVotingResultItems(int fileNumber = 1)
-        {
-            List<VotingResultReport> archivedVotingResultsReports = new List<VotingResultReport>();
-            bool filesFound = true;
-            while (filesFound)
-            {
-                VotingResultReport archivedVotingResult = new VotingResultReport();
-
-                try
-                {
-                    using (var client = new HttpClient())
-                    {
-                        //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/votingresult_", fileNumber, ".json");
-                        var downloadLink = string.Concat(_uriLocation.ToString(), "/votingresult_", fileNumber, ".json");
-                        var result = await client.GetFromJsonAsync<VotingResultReport>(downloadLink, CancellationToken.None);
-                        if (result is not null)
-                        {
-                            archivedVotingResultsReports.Add(result);
-                            await _localStorage.SetItemAsync<VotingResultReport>(string.Concat("votingresult_", fileNumber), result, CancellationToken.None);
-                        }
-                    }
-
-                    fileNumber++;
-                }
-                catch
-                {
-                    filesFound = false;
-                }
-
-            }
-            //Get projectsettings
-            return archivedVotingResultsReports;
-
-        }
 
         private async Task<string> DownloadApplicationVersion()
         {
@@ -473,6 +442,102 @@ namespace Common.Services
 
 
 
+        }
+
+
+        public async Task<VotingResultReport> DownloadArchivedVotingResultItem(string projectName, string projectToken, string votingId, uint startledgerindex, uint endLedgerIndex)
+        {
+            VotingResultReport archivedVotingResultsReport = new VotingResultReport();
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/votingresult_", fileNumber, ".json");
+                    var downloadLink = string.Concat(_uriLocation.ToString(), "/", projectName, "/", projectToken, "/", votingId, "-", startledgerindex, "-", endLedgerIndex, ".json");
+                    var result = await client.GetFromJsonAsync<VotingResultReport>(downloadLink, CancellationToken.None);
+                    if (result is not null)
+                    {
+
+                        await _localStorage.SetItemAsync<VotingResultReport>(downloadLink, result, CancellationToken.None);
+                    }
+
+                    return result;
+                }
+
+
+            }
+            catch
+            {
+                return null;
+            }
+
+
+
+        }
+        public async Task<List<Voting>> GetVotingResultManifest()
+        {
+            //Get projectsettings
+            List<Voting> manifest = new List<Voting>();
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/", votingFileName);
+                    var downloadLink = string.Concat(_uriLocation.ToString(), "?restype=container&comp=list");
+                    var result = await client.GetStringAsync(downloadLink, CancellationToken.None);// GetFromJsonAsync<VotingResultReport>(downloadLink, CancellationToken.None);
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        XmlDocument xmlDoc = new XmlDocument();
+                        xmlDoc.LoadXml(result);
+                        XmlNodeList urlNodeList = xmlDoc.SelectNodes("//Url");
+                        foreach (XmlNode item in urlNodeList)
+                        {
+                            var configurationItemPathArray = item.InnerText.Split(new string[] { string.Concat(_uriLocation.ToString(), "/") }, StringSplitOptions.RemoveEmptyEntries);
+                            if (configurationItemPathArray != null && configurationItemPathArray.Length == 1)
+                            {
+                                //split on /
+                                var votingManifestEntryRaw = configurationItemPathArray[0].Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries);
+                                if (votingManifestEntryRaw.Length == 3)
+                                {
+                                    var votingResultManifest = new Voting();
+                                    votingResultManifest.ProjectName = votingManifestEntryRaw[0];
+                                    votingResultManifest.ProjectToken = votingManifestEntryRaw[1];
+                                    votingResultManifest.VotingResultFile = item.InnerText;
+                                    votingResultManifest.IsLive = false;
+                                    var votingMetaData = votingManifestEntryRaw[2].Replace(".json", string.Empty).Split(new string[] { "-" }, StringSplitOptions.RemoveEmptyEntries);
+                                    if (votingMetaData.Length > 2)
+                                    {
+                                        votingResultManifest.VotingId = votingMetaData[0];
+                                        votingResultManifest.VotingName = votingMetaData[0].HexToString();
+                                        votingResultManifest.VotingStartIndex = Convert.ToUInt32(votingMetaData[1]);
+                                        votingResultManifest.VotingEndIndex = Convert.ToUInt32(votingMetaData[2]);
+                                    }
+                                    else
+                                    {
+                                        votingResultManifest.VotingId = votingMetaData[0];
+                                        votingResultManifest.VotingName = votingMetaData[0].HexToString();
+                                        votingResultManifest.VotingStartIndex = Convert.ToUInt32(votingMetaData[1].Replace(".json", string.Empty));
+                                        votingResultManifest.VotingEndIndex = 0;
+                                    }
+
+                                    manifest.Add(votingResultManifest);
+                                }
+
+                            }
+
+                        }
+                    }
+
+
+                }
+            }
+            catch
+            {
+                return default;
+            }
+
+            return manifest.OrderBy(x => x.ProjectName).ThenBy(x => x.ProjectToken).ThenByDescending(x => x.VotingStartIndex).ToList();
         }
 
     }

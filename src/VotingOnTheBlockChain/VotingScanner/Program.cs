@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using VotingScanner;
 using VotingScanner.Services;
 
 IConfiguration config = new ConfigurationBuilder()
@@ -113,6 +114,7 @@ Console.WriteLine("Connect to XRPL and retrieve votings");
 var ctx = new CancellationTokenSource(new TimeSpan(1, 0, 0));
 await foreach (var result in _votingManager.GetVotings(projectConfigurations, ctx, rippledServer))
 {
+    //result.VotingResultFile = string.Concat("https://", config["RemoteConfigHostBlobStorage"],"/",config["ConfigFolderName"], "/", result.ProjectName, "/", result.ProjectToken, "/", result.VotingId, "-", result.VotingStartIndex, "-", result.VotingEndIndex, ".json");
     storedVotingInformation.Add(result);
 }
 
@@ -128,28 +130,24 @@ Dictionary<string, bool> FilesToCheckForExistance = new Dictionary<string, bool>
 storedVotingInformation?.ForEach(x =>
 {
     // FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "-", x.ProjectToken, "-", x.VotingId,"-", x.VotingStartIndex, ".json")), false);
-    FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, ".json")), false);
+    FilesToCheckForExistance.Add(string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, "-", x.VotingEndIndex, ".json")), false);
 });
 
 await _persistantStorageManager.FilesExistCheck(config["ConfigFolderName"], FilesToCheckForExistance, storageAccountBlobContainerKey);
 
 foreach (var outstandingVotings in FilesToCheckForExistance.Where(x => x.Value == false))
 {
-    var selectedVoting = storedVotingInformation.Where(x => (string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, ".json")) == outstandingVotings.Key)).FirstOrDefault();
+    var selectedVoting = storedVotingInformation.Where(x => (string.Concat(string.Concat(x.ProjectName, "/", x.ProjectToken, "/", x.VotingId, "-", x.VotingStartIndex, "-", x.VotingEndIndex, ".json")) == outstandingVotings.Key)).FirstOrDefault();
     if (selectedVoting is not null)
     {
         await _queueManager.QueueMessage<Voting>(selectedVoting, storageAccountQueueKey);
     }
 }
 
-
-
 Console.WriteLine("Call orchestrator which will start processing the voting results");
 using (var client = new HttpClient())
 {
-    //var downloadLink = string.Concat(_configuration["PublicConfigRepoUri"], "/", votingFileName);  
-    var result = await client.GetAsync(config["VotingResultsProcessorEndpoint"], CancellationToken.None);
-
+    var result = await client.PostAsJsonAsync<VotingResultProcessorRequest>(config["VotingResultsProcessorEndpoint"], new VotingResultProcessorRequest() { instances = Convert.ToInt32(config["VotingResultsProcessorInstanceCount"]), location = config["VotingResultsProcessorLocation"] }, CancellationToken.None);
 }
 
 

@@ -8,7 +8,8 @@ namespace Common.Models.Report
         public string ProjectName { get; set; }
         public string VotingId { get; set; }
         public string VotingName { get; set; }
-        public uint LedgerIndex { get; set; }
+        public uint LedgerStartIndex { get; set; }
+        public uint LedgerEndIndex { get; set; }
         public decimal TotalVotesCast { get; set; }
         public int TotalAccountsVoted { get; set; }
         public int UniqueAccountsVoted { get; set; }
