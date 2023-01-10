@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingStation", "VotingStat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingScanner", "VotingScanner\VotingScanner.csproj", "{4B120C25-4377-4D42-BF58-5375B5C8BC4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VotingResultsProcessor", "VotingResultsProcessor\VotingResultsProcessor.csproj", "{DEC463CF-FFC8-48BC-870A-6517266D30A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingResultsProcessor", "VotingResultsProcessor\VotingResultsProcessor.csproj", "{DEC463CF-FFC8-48BC-870A-6517266D30A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -147,6 +147,7 @@ foreach (var outstandingVotings in FilesToCheckForExistance.Where(x => x.Value =
 Console.WriteLine("Call orchestrator which will start processing the voting results");
 using (var client = new HttpClient())
 {
+
     var result = await client.PostAsJsonAsync<VotingResultProcessorRequest>(config["VotingResultsProcessorEndpoint"], new VotingResultProcessorRequest() { instances = Convert.ToInt32(config["VotingResultsProcessorInstanceCount"]), location = config["VotingResultsProcessorLocation"] }, CancellationToken.None);
 }
 

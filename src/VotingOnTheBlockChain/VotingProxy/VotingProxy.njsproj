@@ -38,6 +38,9 @@
     <None Include=".dockerignore">
       <SubType>Code</SubType>
     </None>
+    <Content Include="..\VotingStation\Pages\AuthKeyDialog.razor">
+      <Link>AuthKeyDialog.razor</Link>
+    </Content>
     <Content Include="docker-compose.yml" />
     <None Include="Dockerfile" />
     <Content Include="index.html" />

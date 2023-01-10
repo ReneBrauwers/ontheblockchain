@@ -1,0 +1,224 @@
+﻿@page "/votingsync"
+@using Common.Extensions;
+@using Common.Models.Xumm;
+@inject HttpClient Http
+@inject NavigationManager _navManager
+@inject ConfigManager _configManager
+@inject VotingManager _votingManager
+@inject IConfiguration _appConfig
+@inject IJSRuntime JS
+
+<PageTitle>Voting synchronisation</PageTitle>
+<section class="text-center container">
+    <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+            <h1 class="fw-light">Voting archive</h1>
+            <p class="lead text-muted">
+                Votings which have completed but have not been archived are displayed below. In order to allow for the synchronisation to be executed, you will need to provide a authorization key, in the text box below.
+            </p>
+            <p>
+                <span class="badge badge-primary my-2">
+                    <HxInputText DisplayName="Authentication key" InputMode="InputMode.Text" @bind-Value="authKey" Label="Authentication key"></HxInputText>
+                </span>
+                <span class="badge badge-primary my-2">
+                    <button class="btn btn-warning btn-sm me-3 mb-3" disabled="@(!_syncEnabled)" @onclick="@InitiateArchivalSync">Initiate Sync</button>
+                </span>
+
+            </p>
+            @if (!_latestVotingFetched)
+            {
+                <span>
+                    <HxSpinner Size="SpinnerSize.Regular" Color="ThemeColor.Warning"></HxSpinner>&nbsp; checking xrpl for votings ready to be archived, please wait...
+                </span>
+            }
+        </div>
+    </div>
+</section>
+
+
+<div class="album py-5 bg-light">
+    <div class="container">
+
+
+
+        @if (_archivedVotings is not null && _archivedVotings.Count > 0)
+        {
+
+            @foreach (var groupedVoting in _archivedVotings.GroupBy(x => x.ProjectName))
+            {
+                <div class="row mb-3">
+                    <div class="col-auto">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="my-0 fw-normal">@groupedVoting.Key Votings</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+
+                                    @foreach (var voteInfo in groupedVoting)
+                                    {
+                                        <ul>
+                                            @if (string.IsNullOrWhiteSpace(voteInfo.VotingResultFile))
+                                            {
+                                                <li>@voteInfo.VotingName</li>
+
+                                            }
+                                        </ul>
+
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        }
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+    [Inject] protected IHxMessengerService Messenger { get; set; }
+    private List<ProjectConfig>? _projectsConfig { get; set; } //= new List<ProjectConfig>();
+    private List<Voting> _archivedVotings { get; set; } = new();
+    private ProjectConfig _selectedProjectConfig { get; set; } = new();
+    private string projectBeingScanned { get; set; } = string.Empty;
+    public bool _latestVotingFetched = false;
+    public bool _syncEnabled = true;
+
+
+
+    private string authKey = string.Empty;
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projectsConfig = new();
+        _syncEnabled = false;
+        _projectsConfig = await _configManager.GetProjectsConfig();
+
+        if (_projectsConfig.Count > 0)
+        {
+            await GetArchivedVotings();
+            _latestVotingFetched = true;
+            _syncEnabled = _archivedVotings.Where(x => string.IsNullOrWhiteSpace(x.VotingResultFile)).Count() > 0;
+            StateHasChanged();
+        }
+
+
+    }
+
+
+
+    private async Task GetArchivedVotings()
+    {
+
+
+        //retrieve archived entries
+        _archivedVotings = await _configManager.GetVotingResultManifest();
+
+        //augment votings with project config data
+        _archivedVotings.ForEach(x =>
+        {
+            var projectAndToken = _projectsConfig.Where(p => p.ProjectName == x.ProjectName && p.ProjectToken == x.ProjectToken).FirstOrDefault();
+            x.IssuerAccount = projectAndToken.IssuerAccount;
+            x.VotingAccount = projectAndToken.VotingAccount;
+            x.VotingControllerAccount = projectAndToken.ControllerAccount;
+        });
+
+        string rippledServer = "wss://xrplcluster.com/";
+        try
+        {
+            //foreach (var project in _projectsConfig)
+            //{
+            CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
+            await foreach (var result in _votingManager.GetVotings(_projectsConfig, ctx, rippledServer))
+            {
+                projectBeingScanned = result.ProjectName;
+                if (!_archivedVotings.Any(x => x.ProjectName == result.ProjectName && x.ProjectToken == result.ProjectToken && x.VotingId == result.VotingId))
+                {
+                    result.VotingResultFile = string.Empty; //indicates that this file has not been archived yet.
+
+                    _archivedVotings.Add(result);
+
+                }
+
+
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+
+
+    }
+
+    private async Task InitiateArchivalSync()
+    {
+
+        // DialogResult<string> dialogResult = await authModal.ShowAsync(); // shows the dialog and waits until the dialog is closed
+        bool keyProvided = false;
+
+        if (authKey.Length > 10)
+        {
+            keyProvided = true;
+        }
+
+
+        if (keyProvided)
+        {
+
+            string votingEndpoint = _appConfig.GetValue<string>("voteScannerApiEndPoint");
+
+            using (var localClient = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, string.Concat(votingEndpoint, "?instancecount=2&location=westus2"));
+                request.Headers.Add("Ocp-Apim-Subscription-Key", authKey);
+                request.SetBrowserRequestMode(BrowserRequestMode.Cors);
+                // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
+
+                var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    Messenger.AddWarning(title: "Syncing in progress", message: "Syncing of missing voting data is happening in the background; this can take a few minutes. Please try again later!");
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Messenger.AddError(title: "Authorization failed", message: "Provided authorization key is not valid. Synchronization will not be exectued.");
+                }
+                else if (response.IsSuccessStatusCode)
+                {
+                    Messenger.AddInformation(title: "Syncing initiated", message: "Syncing of missing voting data has been initiated; data should be updated in a few minutes. Please come back later");
+
+                    //set cookie, as a soft precaution ensuring we are not triggering multiple sync requests
+                }
+                else
+                {
+                    Messenger.AddError(title: "Error occured", message: "Syncing of missing voting data is currently not available; please try again later");
+                }
+
+                
+
+            }
+        }
+        else
+        {
+            Messenger.AddInformation(title: "Syncing cancelled", message: "No valid authorization key provided. Synchronization will not be exectued");
+        }
+    }
+
+}
