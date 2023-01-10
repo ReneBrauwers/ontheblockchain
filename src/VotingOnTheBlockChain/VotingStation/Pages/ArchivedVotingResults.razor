@@ -146,6 +146,7 @@
                         @if (_votingReport is not null && _votingReport.Details is not null && _votingReport.Details.Count > 0 && (_votingReport.Details.Select(x => x.TotalVotes).Count() > 0))
                         {
                             int positionpv = 0;
+                            int uniqueValidAccountsVoted = (_votingReport.UniqueValidAccountsVoted > 0 ? _votingReport.UniqueValidAccountsVoted : 1);
                             foreach (var voteResult in _votingReport.Details.OrderByDescending(x => x.TotalValidAccountsVoted).ToList())
                             {
                                 positionpv++;
@@ -156,11 +157,11 @@
 
                                 </h4>
                                 <div class="progress mb-4">
-                                    <div class="progress-bar bg-danger" aria-valuenow="@(((optionVoteCounts * 100) / _votingReport.UniqueValidAccountsVoted).ToString("N2"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((optionVoteCounts * 100) / _votingReport.UniqueValidAccountsVoted).ToString("N2"))%" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((optionVoteCounts * 100) / _votingReport.UniqueValidAccountsVoted).ToString("N2"))%">
-                                        <span class="visually-hidden">@(((optionVoteCounts * 100) / _votingReport.UniqueValidAccountsVoted).ToString("N2"))%</span>
+                                    <div class="progress-bar bg-danger" aria-valuenow="@(((optionVoteCounts * 100) / uniqueValidAccountsVoted).ToString("N2"))" aria-valuemin="0" aria-valuemax="100" style="width: @(((optionVoteCounts * 100) / uniqueValidAccountsVoted).ToString("N2"))%" data-bs-toggle="tooltip" data-bs-placement="top" title="@(((optionVoteCounts * 100) / uniqueValidAccountsVoted).ToString("N2"))%">
+                                        <span class="visually-hidden">@(((optionVoteCounts * 100) / uniqueValidAccountsVoted).ToString("N2"))%</span>
                                     </div>
                                     &nbsp;<em class="text-black">
-                                        @(((optionVoteCounts * 100) / _votingReport.UniqueValidAccountsVoted).ToString("N2"))%
+                                        @(((optionVoteCounts * 100) / uniqueValidAccountsVoted).ToString("N2"))%
                                     </em>
                                 </div>
                             }
