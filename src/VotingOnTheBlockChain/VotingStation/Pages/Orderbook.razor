@@ -553,9 +553,10 @@
         }
         else
         {
-            var buyCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
+            //use example rwtE8twEvSyFi1YJ6gMwLPQMDwQBb8DfLM
+            var buyCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 2, 0));
             _buyOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Buy, buyCancellationTokenSource, _rippledServer, _selectedOrderBookDepth);
-            var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
+            var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 2, 0));
             _sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, _rippledServer, _selectedOrderBookDepth);
         }
         _loading = false;

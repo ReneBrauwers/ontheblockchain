@@ -180,8 +180,8 @@ namespace Common.Services
                                                 }
                                         }
                                     }
-
-                                    if(isTakerGetsObject && isTakerPaysObject)
+                                    
+                                    if (isTakerGetsObject && isTakerPaysObject)
                                     {
                                         
                                         //get is sell and pay is buy
@@ -196,24 +196,27 @@ namespace Common.Services
                                     }
                                     else if (isTakerPaysObject) //taker_gets XRP and sells taker_pays; thus account is * buying a token and selling XRP
                                     {
-
+                                        //TODO: switch around Quantity + Offer
                                         //taker_gets is buy amount in XRP
-                                        entry.TypeOfOrder = OrderType.Sell;
-                                        entry.OutCurrency = x.GetProperty("taker_pays").GetProperty("currency").GetString().HexToString();
-                                        entry.OutAmount = decimal.Parse(x.GetProperty("taker_pays").GetProperty("value").GetString(), System.Globalization.NumberStyles.Float);
-                                        entry.InAmount = decimal.Parse(x.GetProperty("taker_gets").GetString(), System.Globalization.NumberStyles.Float) / 1000000;
-                                        entry.InCurrency = "XRP";
-                                        entry.ExchangeRateVal = entry.OutAmount / entry.InAmount;
+                                        //entry.TypeOfOrder = OrderType.Sell;
+                                        entry.TypeOfOrder = OrderType.Buy;
+                                        entry.InCurrency = x.GetProperty("taker_pays").GetProperty("currency").GetString().HexToString();
+                                        entry.InAmount = decimal.Parse(x.GetProperty("taker_pays").GetProperty("value").GetString(), System.Globalization.NumberStyles.Float);
+                                        entry.OutAmount = decimal.Parse(x.GetProperty("taker_gets").GetString(), System.Globalization.NumberStyles.Float) / 1000000;
+                                        entry.OutCurrency = "XRP";
+                                        entry.ExchangeRateVal = entry.InAmount / entry.OutAmount;
                                         entry.ExchangeRate = $"{entry.OutCurrency}/{entry.InCurrency}";
                                     }
                                     else //taker_pays XRP and sells taker_gets; thus account is * selling a token and receiving XRP
                                     {
-                                        entry.TypeOfOrder = OrderType.Buy;
-                                        entry.InCurrency = "XRP";
-                                        entry.InAmount = decimal.Parse(x.GetProperty("taker_pays").GetString(), System.Globalization.NumberStyles.Float) / 1000000;
-                                        entry.OutAmount = decimal.Parse(x.GetProperty("taker_gets").GetProperty("value").GetString(), System.Globalization.NumberStyles.Float);
-                                        entry.OutCurrency = x.GetProperty("taker_gets").GetProperty("currency").GetString().HexToString();
-                                        entry.ExchangeRateVal = entry.InAmount / entry.OutAmount;
+                                        //TODO: switch around Quantity + Offer
+                                        //entry.TypeOfOrder = OrderType.Buy;
+                                        entry.TypeOfOrder = OrderType.Sell;
+                                        entry.OutCurrency = "XRP";
+                                        entry.OutAmount = decimal.Parse(x.GetProperty("taker_pays").GetString(), System.Globalization.NumberStyles.Float) / 1000000;
+                                        entry.InAmount = decimal.Parse(x.GetProperty("taker_gets").GetProperty("value").GetString(), System.Globalization.NumberStyles.Float);
+                                        entry.InCurrency = x.GetProperty("taker_gets").GetProperty("currency").GetString().HexToString();
+                                        entry.ExchangeRateVal = entry.OutAmount / entry.InAmount;
                                         entry.ExchangeRate = $"{entry.OutCurrency}/{entry.InCurrency}";
                                     }
 
