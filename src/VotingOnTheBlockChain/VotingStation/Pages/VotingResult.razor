@@ -5,6 +5,7 @@
 @inject VotingManager _votingManager
 @inject NavigationManager _navManager
 @inject LedgerManager _ledgerManager
+@inject CookieManager _cookieManager
 @inject IJSRuntime JS
 
 <PageTitle>Last voting results</PageTitle>
@@ -287,7 +288,7 @@
 
 
 
-    private string _endPoint = "wss://xrplcluster.com/";
+    private string _rippledServer;
     private Ledger _latestLedgerIndex = new Ledger();
 
     //summary fields
@@ -315,7 +316,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-
+        var rippledServer = await _cookieManager.GetRippledServer();
+        _rippledServer = rippledServer.Server;
 
         StateHasChanged();
         _votingReport.ProjectToken = projectToken;
@@ -368,11 +370,11 @@
         Voting result;
         if (_isLive)
         {
-            result = await _votingManager.GetLastVoting(projectConfig, ctx);
+            result = await _votingManager.GetLastVoting(projectConfig, ctx,_rippledServer);
         }
         else
         {
-            result = await _votingManager.GetVoting(projectConfig, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx);
+            result = await _votingManager.GetVoting(projectConfig, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _rippledServer);
         }
 
         if (result is not null && result?.VotingOptions?.Count() > 0)
@@ -541,7 +543,7 @@
 
         if (_isLive)
         {
-            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _endPoint))
+            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, (UInt32)votingStartIndex, ctx, _rippledServer))
             {
                 yield return result;
 
@@ -549,7 +551,7 @@
         }
         else
         {
-            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, votingId, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _endPoint))
+            await foreach (var result in _votingManager.GetVotingResultsAsyncEnumerable(votingAccount, votingControllerAccount, votingId, (UInt32)votingStartIndex, (UInt32)votingEndIndex, ctx, _rippledServer))
             {
                 yield return result;
             }
@@ -564,18 +566,18 @@
         if (_isLive)
         {
             //get currenct
-            _latestLedgerIndex = await _ledgerManager.GetLastLedgerIndex(ledgerCancellationToken, _endPoint);
+            _latestLedgerIndex = await _ledgerManager.GetLastLedgerIndex(ledgerCancellationToken, _rippledServer);
         }
         else
         {
             //get last voting index
-            _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken, (uint)votingEndIndex, _endPoint);
+            _latestLedgerIndex = await _ledgerManager.GetSpecificLedgerIndex(ledgerCancellationToken, (uint)votingEndIndex, _rippledServer);
         }
 
 
 
 
-        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsyncEnumerable(_popularVote.Select(x => x.VoterAddress).Distinct().ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, _endPoint))
+        await foreach (var balanceResult in _votingManager.GetVoterBalancesAsyncEnumerable(_popularVote.Select(x => x.VoterAddress).Distinct().ToList(), issuerAccount, _latestLedgerIndex.ledgerIndex, projectToken, _rippledServer))
         {
 
             yield return balanceResult;

@@ -7,6 +7,7 @@
 @inject VotingManager _votingManager
 @inject IConfiguration _appConfig
 @inject IJSRuntime JS
+@inject CookieManager _cookManager
 
 <PageTitle>Live Votings</PageTitle>
 <section class="text-center container">
@@ -154,11 +155,16 @@ else
     public bool _latestVotingFetched = false;
     private bool _liveVotingAvailable = false;
     private string _signingMethod { get; set; } = "ledger";
+    private string _rippledServer;
     protected override async Task OnInitializedAsync()
     {
         _projectsConfig = new();
         await _configManager.ClearLocalStore();
         _projectsConfig = await _configManager.GetProjectsConfig();
+
+        var rippledServer = await _cookManager.GetRippledServer();
+        _rippledServer = rippledServer.Server;
+
         if (_projectsConfig.Count > 0)
         {
             if (await GetVotings())
@@ -187,8 +193,8 @@ else
         {
             foreach (var project in _projectsConfig)
             {
-                CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 0, 20)); //20 seconds
-                var result = await _votingManager.GetLastVoting(project, ctx);
+                CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 2, 0)); //2 minutes
+                var result = await _votingManager.GetLastVoting(project, ctx, _rippledServer);
                 if (result is not null && result?.VotingOptions?.Count() > 0)
                 {
                     if(result.IsLive)

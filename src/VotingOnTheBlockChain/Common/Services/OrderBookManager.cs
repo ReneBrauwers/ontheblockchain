@@ -32,7 +32,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <param name="orderBookDepth">Depth of orders to return</param>
         /// <returns>Order book entries for the given issuer token</returns>
-        public async Task<List<OrderBook>> GetOrderBook(string issuer, string currency, OrderType orderBookType, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/", int orderBookDepth = 5)
+        public async Task<List<OrderBook>> GetOrderBook(string issuer, string currency, OrderType orderBookType, CancellationTokenSource cTokenSource, string socketEndpoint, int orderBookDepth = 5)
         {
 
             _issuerAccount = issuer;

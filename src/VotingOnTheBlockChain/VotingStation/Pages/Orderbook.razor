@@ -4,6 +4,7 @@
 @inject HttpClient Http
 @inject OrderBookManager _orderBook
 @inject ConfigManager _configManager
+@inject CookieManager _cookieManager
 <PageTitle>Order Book</PageTitle>
 
 
@@ -320,7 +321,7 @@
     private decimal _priceRangeDiffPercentage = 0.20m;
     private int _minTotalSellAmount = 20000;
     private int _minTotalSellTransactions = 3;
-    // private bool _sellWallFilterEnabled = false;
+    private string _rippledServer;
     // private List<AccountOrderBook> _orders = new List<AccountOrderBook>();
     private List<OrderBook> _buyOrders;
     private List<OrderBook> _sellOrders;
@@ -345,6 +346,8 @@
     protected async override Task OnInitializedAsync()
     {
         await _configManager.ClearLocalStore();
+        var rippledServer = await _cookieManager.GetRippledServer();
+        _rippledServer = rippledServer.Server;
         await Init();
         await GetOrderBookData();
 
@@ -436,7 +439,7 @@
         if (_isAdvancedChecked)
         {
             var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
-            var sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
+            var sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, _rippledServer, _selectedOrderBookDepth);
             var filteredItems = sellOrders.GroupBy(x => x.Account).Where(grp => grp.Count() >= _minTotalSellTransactions);
             _sellWalls = new List<List<OrderBook>>();
             foreach (var groupedAccounts in filteredItems)
@@ -551,9 +554,9 @@
         else
         {
             var buyCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
-            _buyOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Buy, buyCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
+            _buyOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Buy, buyCancellationTokenSource, _rippledServer, _selectedOrderBookDepth);
             var sellCancellationTokenSource = new CancellationTokenSource(new TimeSpan(0, 0, 30));
-            _sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, "wss://xrplcluster.com", _selectedOrderBookDepth);
+            _sellOrders = await _orderBook.GetOrderBook(_selectedValue.IssuerAccount, _selectedValue.Currency, Enums.OrderType.Sell, sellCancellationTokenSource, _rippledServer, _selectedOrderBookDepth);
         }
         _loading = false;
 

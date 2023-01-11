@@ -25,7 +25,7 @@
 
 
                 <span class="badge rounded-pill text-bg-light mb-3">Total votes cast: @_votingReport?.TotalVotesCast.ToString("N0")</span>
-                <span class="badge rounded-pill text-bg-warning mb-3">Total account votes: @_votingReport.TotalAccountsVoted.ToString("N0")</span>
+                <span class="badge rounded-pill text-bg-warning mb-3">Total account votes: @_votingReport?.TotalAccountsVoted.ToString("N0")</span>
                 <span class="badge rounded-pill text-bg-success  mb-3">Total (valid) account votes: @_votingReport?.UniqueValidAccountsVoted.ToString("N0")</span>
 
                 @if (_totalInvalidatedVotes > 0)
@@ -249,9 +249,7 @@
     [Parameter]
     [SupplyParameterFromQuery(Name = "ei")]
     public int? votingEndIndex { get; set; }
-
-
-    private string _endPoint = "wss://xrplcluster.com/";
+       
     private Ledger _latestLedgerIndex = new Ledger();
 
     //summary fields
@@ -280,7 +278,7 @@
     protected override async Task OnInitializedAsync()
     {
 
-        _votingReport = await _configManager.DownloadArchivedVotingResultItem(projectName, projectToken, votingId, Convert.ToUInt32(votingStartIndex), Convert.ToUInt32(votingEndIndex));
+        _votingReport = await _configManager.DownloadArchivedVotingResultItem(projectName ?? string.Empty, projectToken ?? string.Empty, votingId ?? string.Empty, Convert.ToUInt32(votingStartIndex), Convert.ToUInt32(votingEndIndex));
         generalVoteIsLoading = false;
         popularVoteIsLoading = false;
         GetInvalidatedVotes();
@@ -344,9 +342,9 @@
         if (details is not null)
         {
 
-            foreach (var item in details.votingAccountDetails.Where(x => x.IsValid).ToList().OrderByDescending(x => x.GetType()
-                                                            .GetProperty((_sortDetailsByVotes ? "Balance" : "LastRecordedVoteDateTime"))
-                                                            .GetValue(x, null))
+            foreach (var item in details.votingAccountDetails.Where(x => x.IsValid).ToList().OrderByDescending(x => x?.GetType()
+                                                            ?.GetProperty((_sortDetailsByVotes ? "Balance" : "LastRecordedVoteDateTime"))
+                                                            ?.GetValue(x, null))
                                 .ToList()) //.OrderByDescending(x => x.Balance))
             {
                 string balance = string.Empty;

@@ -1,0 +1,134 @@
+﻿@page "/settings"
+@inject IConfiguration _appConfig
+@inject CookieManager _cookieManager
+
+<PageTitle>Settings</PageTitle>
+<section class="text-center container">
+    <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+            <h1 class="fw-light">Settings</h1>
+            <p class="lead text-muted">
+                Feel free to play around with the below mentioned settings. Please note that the settings will be stored on your machine using cookies.
+            </p>
+        </div>
+    </div>
+</section>
+@if (dataLoaded)
+{
+    <div class="album py-5 bg-light">
+        <div class="container">
+                <div class="row mb-3">
+            <h4 class="my-0 fw-normal">Network selection</h4>
+            </div>
+            <div class="row">
+                @foreach (var network in _networkServers.GroupBy(x => x.Network))
+                {
+                <div class="col me-3 mb-3">
+                    <div class="card rounded-3 shadow-sm">
+                        <div class="card-header py-3">
+                            <div class="row">
+                                <div class="col">
+                                    <h4 class="my-0 fw-normal">@network.Key network</h4>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                    @foreach (var item in network)
+                                    {
+
+                                        var id = new Guid().ToString();
+                                        var isSelected = (_rippledServer.Server == item.Server);
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="form-check">
+                                                @if (isSelected)
+                                                {
+                                                    <input class="form-check-input" type="radio" checked name="@id" id="@id" @onchange="@(() => UpdateCookie(item))">
+                                                }
+                                                else
+                                                {
+                                                    <input class="form-check-input" type="radio" name="@id" id="@id" @onchange="@(() => UpdateCookie(item))">
+                                                }
+                                                <label class="form-check-label" for="@id">@item.Server</label>
+                                        </div>
+                                        </div>
+                                    }
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+
+
+        </div>
+    </div>
+}
+else
+{
+
+}
+
+
+
+
+
+
+
+
+
+@code {
+    [Inject] protected IHxMessengerService Messenger { get; set; }
+    private List<RippledServer> _networkServers = new List<RippledServer>();
+    private RippledServer _rippledServer = new();
+    private bool dataLoaded = false;
+    protected override async Task OnInitializedAsync()
+    {
+        _rippledServer = await _cookieManager.GetRippledServer();
+
+
+        _appConfig.GetValue<string>("rippledServers:Main")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        {
+            _networkServers.Add(new RippledServer()
+                {
+                    Network = "Main",
+                    Server = x
+                });
+        });
+
+        _appConfig.GetValue<string>("rippledServers:Test")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        {
+            _networkServers.Add(new RippledServer()
+                {
+                    Network = "Test",
+                    Server = x
+                });
+        });
+
+        _appConfig.GetValue<string>("rippledServers:Dev")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        {
+            _networkServers.Add(new RippledServer()
+                {
+                    Network = "Dev",
+                    Server = x
+                });
+        });
+        dataLoaded = true;
+        StateHasChanged();
+
+    }
+
+
+    private async Task UpdateCookie(RippledServer rippledServer)
+    {
+        if (rippledServer is not null)
+        {
+            _rippledServer = rippledServer;
+
+            await _cookieManager.UpdateRippledServer(_rippledServer);
+            Messenger.AddInformation(title: "Success", message: $"Network preference has been updated to {_rippledServer.Server} on the {_rippledServer.Network} network");
+        }
+
+
+    }
+}

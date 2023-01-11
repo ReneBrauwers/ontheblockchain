@@ -4,6 +4,7 @@
 @inject AccountOfferManager _accountOfferManager
 @inject AccountInfoManager _accountInfoManager
 @inject ConfigManager _configManager
+@inject CookieManager _cookieManager
 
 <PageTitle>Account Information</PageTitle>
 
@@ -220,7 +221,7 @@ else
     // private string _accountAlias { get; set; } = string.Empty;
     // private string _accountLookupLink { get; set; } = string.Empty;
 
-    // private bool _accountIsWhitelisted = false;
+    private string _rippledServer;
     private bool _loading = false;
     private string _message = "";
     private List<AccountOffers> _openOrders;
@@ -228,6 +229,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var rippledServer = await _cookieManager.GetRippledServer();
+        _rippledServer = rippledServer.Server;
         if (!string.IsNullOrEmpty(_account))
         {
             await GetAccountInformationAndOrders();
@@ -264,7 +267,7 @@ else
 
 
             //get account info
-            _accountInformation = await _accountInfoManager.GetAccountInformation(_account, 0, ctxInfo, "wss://xrplcluster.com");
+            _accountInformation = await _accountInfoManager.GetAccountInformation(_account, 0, ctxInfo, _rippledServer);
             if (_accountInformation is null || String.IsNullOrWhiteSpace(_accountInformation.Account))
             {
                 _message = string.Concat("Account ", _account, " not found!");
@@ -281,7 +284,7 @@ else
                 CancellationTokenSource ctxOrders = new CancellationTokenSource(new TimeSpan(0, 0, 20));
                 _dataFetchingText = $"{_accountInformation.Account} open orders";
                 StateHasChanged();
-                _openOrders = await _accountOfferManager.GetAccountOrder(_account, 0, ctxOrders, "wss://xrplcluster.com");
+                _openOrders = await _accountOfferManager.GetAccountOrder(_account, 0, ctxOrders, _rippledServer);
                 if (_openOrders is null || _openOrders.Count == 0)
                 {
                     _message = string.Concat("no orders found on the dex for ", _account);

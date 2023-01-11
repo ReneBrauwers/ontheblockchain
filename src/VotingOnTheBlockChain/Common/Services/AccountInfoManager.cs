@@ -29,7 +29,7 @@ namespace Common.Services
         /// <param name="cTokenSource">Cancellation token source</param>
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <returns>Order book entries for the given account</returns>
-        public async Task<AccountInformation> GetAccountInformation(string account, int ledgerIndex, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/") //string projectId, string projectName, string controllerAccount, string votingAccount, string issuerAccount)
+        public async Task<AccountInformation> GetAccountInformation(string account, int ledgerIndex, CancellationTokenSource cTokenSource, string socketEndpoint) //string projectId, string projectName, string controllerAccount, string votingAccount, string issuerAccount)
         {
             _holderAccount = account;
             _websocketServer = new Uri(socketEndpoint);

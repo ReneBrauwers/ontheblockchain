@@ -22,7 +22,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
-        public async Task<Ledger> GetLastLedgerIndex(CancellationTokenSource cTokenSource,  string socketEndpoint = "wss://xrplcluster.com")
+        public async Task<Ledger> GetLastLedgerIndex(CancellationTokenSource cTokenSource,  string socketEndpoint)
         {
           var ledger = new Ledger();
             ledger.ledgerIndex = 0;

@@ -10,7 +10,7 @@ namespace Common.Services
 {
     public sealed class VotingManager
     {
-        private Dictionary<string,bool> rippledServers= new Dictionary<string,bool>();
+        //private Dictionary<string,bool> rippledServers= new Dictionary<string,bool>();
         private string _baseConfigPath { get; set; }
         //Dictionay List<string> endpoints = new List<string>()
         //    {
@@ -24,10 +24,10 @@ namespace Common.Services
         public VotingManager(IConfiguration config)
         {
             _baseConfigPath = string.Concat("https://", config["RemoteConfigHostBlobStorage"], "/", config["ConfigFolderName"], "/");
-            foreach (var item in config["websocketAddress"].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                rippledServers.Add(item, true);
-            }
+            //foreach (var item in config["websocketAddress"].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries))
+            //{
+             //   rippledServers.Add(item, true);
+            //}
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <param name="cTokenSource">Token source allowing a controlled cancellation</param>
         /// <returns></returns>
-        public async IAsyncEnumerable<Voting> GetVotings(List<ProjectConfig> projectConfigurationSettings, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async IAsyncEnumerable<Voting> GetVotings(List<ProjectConfig> projectConfigurationSettings, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
              
             Voting voting;
@@ -281,7 +281,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <param name="cTokenSource">Token source allowing a controlled cancellation</param>
         /// <returns></returns>
-        public async Task<Voting> GetVoting(ProjectConfig projectConfigurationSettings, uint startIndex, uint endIndex ,CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async Task<Voting> GetVoting(ProjectConfig projectConfigurationSettings, uint startIndex, uint endIndex ,CancellationTokenSource cTokenSource, string socketEndpoint)
         {
             var _options = new JsonSerializerOptions()
             { PropertyNameCaseInsensitive = true };
@@ -513,7 +513,7 @@ namespace Common.Services
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <param name="cTokenSource">Token source allowing a controlled cancellation</param>
         /// <returns></returns>
-        public async Task<Voting> GetLastVoting(ProjectConfig projectConfigurationSettings, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async Task<Voting> GetLastVoting(ProjectConfig projectConfigurationSettings, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
             var _options = new JsonSerializerOptions()
             { PropertyNameCaseInsensitive = true };
@@ -744,7 +744,7 @@ namespace Common.Services
         /// <param name="startIndex">Start Ledger Index, indicates when voting started</param>
         /// <param name="endIndex">End Ledger Index, indicates when voting has ended</param>
         /// <returns></returns>
-        public async IAsyncEnumerable<VotingResults> GetVotingResultsAsyncEnumerable(string votingAccount, string votingControllerAccount, string votingId, uint startIndex, uint endIndex, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async IAsyncEnumerable<VotingResults> GetVotingResultsAsyncEnumerable(string votingAccount, string votingControllerAccount, string votingId, uint startIndex, uint endIndex, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
             //List<VotingResults> votingResults = new();
 
@@ -969,7 +969,7 @@ namespace Common.Services
         /// <param name="cTokenSource">Cancellation Token Source</param>
         /// <param name="socketEndpoint">Rippled Server endpoint</param>
         /// <returns></returns>
-        public async Task<List<VotingResults>> GetVotingResultsAsync(string votingAccount, string votingControllerAccount, string votingId, uint startIndex, uint endIndex, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async Task<List<VotingResults>> GetVotingResultsAsync(string votingAccount, string votingControllerAccount, string votingId, uint startIndex, uint endIndex, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
             List<VotingResults> votingResults = new();
 
@@ -1194,7 +1194,7 @@ namespace Common.Services
         /// <param name="startIndex">Start Ledger Index, indicates when voting started</param>
 
         /// <returns></returns>
-        public async IAsyncEnumerable<VotingResults> GetVotingResultsAsyncEnumerable(string votingAccount, string votingControllerAccount, uint startIndex, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com/")
+        public async IAsyncEnumerable<VotingResults> GetVotingResultsAsyncEnumerable(string votingAccount, string votingControllerAccount, uint startIndex, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
             //List<VotingResults> votingResults = new();
 
@@ -1410,7 +1410,7 @@ namespace Common.Services
         /// <param name="socketEndpoint"></param>
         /// <param name="cTokenSource">Cancellation token</param>/// 
         /// <returns></returns>
-        public async IAsyncEnumerable<AccountBalance> GetVoterBalancesAsyncEnumerable(List<string> Addresses, string PeerAccount, uint LedgerGetBalanceIndex, string Currency, string socketEndpoint = "wss://xrplcluster.com")
+        public async IAsyncEnumerable<AccountBalance> GetVoterBalancesAsyncEnumerable(List<string> Addresses, string PeerAccount, uint LedgerGetBalanceIndex, string Currency, string socketEndpoint)
         {
 
             // UInt32 votingHasConcludedLedgerIndex;
@@ -1523,7 +1523,7 @@ namespace Common.Services
         /// <param name="socketEndpoint"></param>
         /// <param name="cTokenSource">Cancellation token</param>/// 
         /// <returns></returns>
-        public async Task<List<AccountBalance>> GetVoterBalancesAsync(List<string> Addresses, string PeerAccount, uint LedgerGetBalanceIndex, string Currency, CancellationTokenSource cTokenSource, string socketEndpoint = "wss://xrplcluster.com")
+        public async Task<List<AccountBalance>> GetVoterBalancesAsync(List<string> Addresses, string PeerAccount, uint LedgerGetBalanceIndex, string Currency, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
 
             
@@ -1596,33 +1596,6 @@ namespace Common.Services
 
 
         }
-
-
-
-        private string GetAvailableServer()
-        {
-            //get new server
-            if (rippledServers.Any(x => x.Value))
-            {
-                //take first
-                var selectedServer = rippledServers.First(x => x.Value);
-                rippledServers[selectedServer.Key] = false;
-                return selectedServer.Key;
-                
-            }
-            else
-            {
-                //let's reset
-                foreach (var item in rippledServers.Keys)
-                {
-                    rippledServers[item] = true;
-                }
-
-                return GetAvailableServer();
-            }
-        }
-
-     
 
         private async IAsyncEnumerable<AccountBalance> ProcessAccountBalanceAsyncEnumerable(ClientWebSocket socket, string peerAccount, uint ledgerGetBalanceIndex, string currency, Dictionary<string, bool> WorkItems, CancellationToken token)
         {

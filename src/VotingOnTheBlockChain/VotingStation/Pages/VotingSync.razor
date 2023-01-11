@@ -7,6 +7,7 @@
 @inject VotingManager _votingManager
 @inject IConfiguration _appConfig
 @inject IJSRuntime JS
+@inject CookieManager _cookieManager
 
 <PageTitle>Voting synchronisation</PageTitle>
 <section class="text-center container">
@@ -93,7 +94,7 @@
     private string projectBeingScanned { get; set; } = string.Empty;
     public bool _latestVotingFetched = false;
     public bool _syncEnabled = true;
-
+    private string _rippledServer;
 
 
     private string authKey = string.Empty;
@@ -106,6 +107,9 @@
         _projectsConfig = new();
         _syncEnabled = false;
         _projectsConfig = await _configManager.GetProjectsConfig();
+
+        var rippledServer = await _cookieManager.GetRippledServer();
+        _rippledServer = rippledServer.Server;
 
         if (_projectsConfig.Count > 0)
         {
@@ -136,13 +140,13 @@
             x.VotingControllerAccount = projectAndToken.ControllerAccount;
         });
 
-        string rippledServer = "wss://xrplcluster.com/";
+        //string rippledServer = "wss://xrplcluster.com/";
         try
         {
             //foreach (var project in _projectsConfig)
             //{
             CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
-            await foreach (var result in _votingManager.GetVotings(_projectsConfig, ctx, rippledServer))
+            await foreach (var result in _votingManager.GetVotings(_projectsConfig, ctx, _rippledServer))
             {
                 projectBeingScanned = result.ProjectName;
                 if (!_archivedVotings.Any(x => x.ProjectName == result.ProjectName && x.ProjectToken == result.ProjectToken && x.VotingId == result.VotingId))
