@@ -1,0 +1,62 @@
+﻿@inject IConfiguration _appConfig
+@inject CookieManager _cookieManager
+@inject IJSRuntime JS
+@inject RippledServerState _rippledServerState
+<div class="container-fluid">
+    <div class="text-center">
+        @if (_rippledServerState._rippledServer is not null)
+        {
+            if (_rippledServerState._rippledServer.IsConnected)
+            {
+                <span class="text-muted">Connected to the <strong>@_rippledServerState._rippledServer.Network Network</strong>  via @(_rippledServerState._rippledServer.Server.Replace("wss://", string.Empty).Replace("/", string.Empty))</span>
+                    
+        <span style="display: inline-block; margin-left: 0.5rem;">
+        <HxSpinner Size="SpinnerSize.Small" Type="SpinnerType.Grow" Color="ThemeColor.Success" />
+        </span>
+       
+            }
+            else
+            {
+                <span class="text-muted">Ready to connect to the <strong>@_rippledServerState._rippledServer.Network Network</strong> via @(_rippledServerState._rippledServer.Server.Replace("wss://", string.Empty).Replace("/", string.Empty))</span>
+                @*<HxBadge Type="BadgeType.RoundedPill" Color="ThemeColor.Danger">@_rippledServerState._rippledServer?.Server</HxBadge>*@
+            }
+        }
+
+    </div>
+    
+</div>
+
+@code {
+    private string query = String.Empty;
+    RippledServer _rippledServer = new();
+
+    public List<string> availableRippledServers = new();
+    private string _activeRippledServer = string.Empty;
+    private string _activeRippleNetwork = string.Empty;
+    private string selectedRippledServer = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        _rippledServer = await _cookieManager.GetRippledServer();
+
+        //register onchange event
+        _rippledServerState.OnChange += async () => await RefreshRippledServerStateInformation();
+        //set network
+        _rippledServerState.SetRippledServerState(_rippledServer.Network, _rippledServer.Server);
+
+    }
+
+    private async Task RefreshRippledServerStateInformation() //callback when rippled server state context has changed
+    {
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    public void Dispose()
+    {
+
+        _rippledServerState.OnChange -= async () => await RefreshRippledServerStateInformation();
+
+    }
+
+}

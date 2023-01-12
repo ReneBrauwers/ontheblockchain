@@ -1,6 +1,9 @@
 ﻿@page "/settings"
 @inject IConfiguration _appConfig
 @inject CookieManager _cookieManager
+@inject RippledServerState _rippledServerState
+@inject ConfigManager _configManager
+@inject VotingManager _votingManager
 
 <PageTitle>Settings</PageTitle>
 <section class="text-center container">
@@ -17,22 +20,22 @@
 {
     <div class="album py-5 bg-light">
         <div class="container">
-                <div class="row mb-3">
-            <h4 class="my-0 fw-normal">Network selection</h4>
+            <div class="row mb-3">
+                <h4 class="my-0 fw-normal">Network selection</h4>
             </div>
-            <div class="row">
+            <div class="row mb-3">
                 @foreach (var network in _networkServers.GroupBy(x => x.Network))
                 {
-                <div class="col me-3 mb-3">
-                    <div class="card rounded-3 shadow-sm">
-                        <div class="card-header py-3">
-                            <div class="row">
-                                <div class="col">
-                                    <h4 class="my-0 fw-normal">@network.Key network</h4>
+                    <div class="col me-3 mb-3">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="my-0 fw-normal">@network.Key network</h4>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                
+                                <div class="card-body">
+
                                     @foreach (var item in network)
                                     {
 
@@ -49,18 +52,66 @@
                                                     <input class="form-check-input" type="radio" name="@id" id="@id" @onchange="@(() => UpdateCookie(item))">
                                                 }
                                                 <label class="form-check-label" for="@id">@item.Server</label>
-                                        </div>
+                                            </div>
                                         </div>
                                     }
-                                
+
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 }
             </div>
+            <div class="row mb-3 " >
+                <h4 class="my-0 fw-normal">Voting archival synchronisation</h4>
+                <small>In order to allow for the synchronisation to be executed, you will need to provide a authorization key, in the text box below.</small>
+            </div>
+            <div class="row mb-3">
+                
+                    <div class="col me-3 mb-3">
+                        <div class="card rounded-3 shadow-sm">
+                            <div class="card-header py-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="my-0 fw-normal"><HxInputText DisplayName="Authentication key" InputMode="InputMode.Text" @bind-Value="authKey" Label="Authentication key"></HxInputText></h4>
+                                    <HxButton Color="ThemeColor.Success" style="width:10em;" Enabled="@(!_syncEnabled)" OnClick="GetArchivedVotings" Text="Check" CssClass="me-3 mt-3 float-end" Size="ButtonSize.Small"></HxButton>
+                                       @* <button class="btn btn-success btn-sm me-3 mt-3 float-end" style="width:10em;" disabled="@(_syncEnabled)" @onclick="@GetArchivedVotings">Check</button>*@
+                                </div>
+                                </div>
+                                <div class="card-body">
+                                    @if (_archivedVotings is not null && _archivedVotings.Count > 0)                                    
+                                    {
+                                             <h5>Votings ready to be archived:</h5>                                  
+                                            @foreach (var groupedVoting in _archivedVotings.GroupBy(x => x.ProjectName))
+                                            {
+                                                <div >     
+                                                @foreach (var voteInfo in groupedVoting)
+                                                {
+                                                <ul class="list-group">
+                                                        @if (string.IsNullOrWhiteSpace(voteInfo.VotingResultFile))
+                                                        {
+                                                        <li class="list-group-item"><strong>@groupedVoting.Key</strong><span class="float-end">@voteInfo.VotingName</span></li>
 
+                                                        }
+                                                      
+                                                    </ul>
 
+                                                }
+                                        </div>
+                                            }
+                                    <HxButton Color="ThemeColor.Success" style="width:10em;" Enabled="@(!_syncInitiated)" OnClick="InitiateArchivalSync" Text="Initiate Sync" CssClass="me-3 mt-3 float-end" Size="ButtonSize.Small"></HxButton>
+                                   
+                                       
+                                       
+                                    }
+                               
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+            </div>
         </div>
     </div>
 }
@@ -79,9 +130,21 @@ else
 
 @code {
     [Inject] protected IHxMessengerService Messenger { get; set; }
+
+    //Rippled server settings
     private List<RippledServer> _networkServers = new List<RippledServer>();
     private RippledServer _rippledServer = new();
     private bool dataLoaded = false;
+
+    //archival sync settings
+    private List<ProjectConfig>? _projectsConfig { get; set; }
+    private List<Voting> _archivedVotings { get; set; } = new();
+    public bool _syncEnabled = false;
+    public bool _syncInitiated = false;
+    private string authKey = string.Empty;
+
+
+
     protected override async Task OnInitializedAsync()
     {
         _rippledServer = await _cookieManager.GetRippledServer();
@@ -127,8 +190,119 @@ else
 
             await _cookieManager.UpdateRippledServer(_rippledServer);
             Messenger.AddInformation(title: "Success", message: $"Network preference has been updated to {_rippledServer.Server} on the {_rippledServer.Network} network");
+            _rippledServerState.SetRippledServerState(_rippledServer.Network, _rippledServer.Server);
         }
 
 
     }
+
+    private async Task InitiateArchivalSync()
+    {
+
+        // DialogResult<string> dialogResult = await authModal.ShowAsync(); // shows the dialog and waits until the dialog is closed
+        bool keyProvided = false;
+
+        if (authKey.Length > 10)
+        {
+            keyProvided = true;
+        }
+
+
+        if (keyProvided)
+        {
+            _syncInitiated = true;
+            string votingEndpoint = _appConfig.GetValue<string>("voteScannerApiEndPoint");
+
+            using (var localClient = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, string.Concat(votingEndpoint, "?instancecount=2&location=westus2"));
+                request.Headers.Add("Ocp-Apim-Subscription-Key", authKey);
+                request.SetBrowserRequestMode(BrowserRequestMode.Cors);
+                // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
+
+                var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    Messenger.AddWarning(title: "Syncing in progress", message: "Syncing of missing voting data is happening in the background; this can take a few minutes. Please try again later!");
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Messenger.AddError(title: "Authorization failed", message: "Provided authorization key is not valid. Synchronization will not be exectued.");
+                }
+                else if (response.IsSuccessStatusCode)
+                {
+                    Messenger.AddInformation(title: "Syncing initiated", message: "Syncing of missing voting data has been initiated; data should be updated in a few minutes. Please come back later");
+
+                    //set cookie, as a soft precaution ensuring we are not triggering multiple sync requests
+                }
+                else
+                {
+                    Messenger.AddError(title: "Error occured", message: "Syncing of missing voting data is currently not available; please try again later");
+                }
+
+
+
+            }
+        }
+        else
+        {
+            Messenger.AddInformation(title: "Syncing cancelled", message: "No valid authorization key provided. Synchronization will not be exectued");
+        }
+
+        _syncInitiated = false;
+    }
+    private async Task GetArchivedVotings()
+    {
+        _projectsConfig = await _configManager.GetProjectsConfig();
+
+        //retrieve archived entries
+        _archivedVotings = await _configManager.GetVotingResultManifest();
+
+        //augment votings with project config data
+        _archivedVotings.ForEach(x =>
+        {
+            var projectAndToken = _projectsConfig.Where(p => p.ProjectName == x.ProjectName && p.ProjectToken == x.ProjectToken).FirstOrDefault();
+            x.IssuerAccount = projectAndToken.IssuerAccount;
+            x.VotingAccount = projectAndToken.VotingAccount;
+            x.VotingControllerAccount = projectAndToken.ControllerAccount;
+        });
+
+        //string rippledServer = "wss://xrplcluster.com/";
+        try
+        {
+            //foreach (var project in _projectsConfig)
+            //{
+            CancellationTokenSource ctx = new CancellationTokenSource(new TimeSpan(0, 5, 0)); //5 minutes
+            await foreach (var result in _votingManager.GetVotings(_projectsConfig, ctx, _rippledServerState._rippledServer.Server))
+            {
+
+                if (!_archivedVotings.Any(x => x.ProjectName == result.ProjectName && x.ProjectToken == result.ProjectToken && x.VotingId == result.VotingId))
+                {
+                    result.VotingResultFile = string.Empty; //indicates that this file has not been archived yet.
+
+                    _archivedVotings.Add(result);
+
+                }
+
+
+            }
+
+            StateHasChanged();
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        if(_archivedVotings.Count > 0)
+        {
+            _syncEnabled = true;
+        }
+
+
+
+    }
+
 }

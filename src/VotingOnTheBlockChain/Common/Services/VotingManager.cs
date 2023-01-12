@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Handlers;
 using Common.Models.Config;
 using Microsoft.Extensions.Configuration;
 using System.Dynamic;
@@ -12,6 +13,7 @@ namespace Common.Services
     {
         //private Dictionary<string,bool> rippledServers= new Dictionary<string,bool>();
         private string _baseConfigPath { get; set; }
+        private RippledServerState _rippledServerState { get; set; }
         //Dictionay List<string> endpoints = new List<string>()
         //    {
         //     new string ("wss://xrplcluster.com") ,
@@ -21,12 +23,13 @@ namespace Common.Services
         //     };
 
 
-        public VotingManager(IConfiguration config)
+        public VotingManager(IConfiguration config, RippledServerState rippledServerState)
         {
             _baseConfigPath = string.Concat("https://", config["RemoteConfigHostBlobStorage"], "/", config["ConfigFolderName"], "/");
+            _rippledServerState = rippledServerState;
             //foreach (var item in config["websocketAddress"].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries))
             //{
-             //   rippledServers.Add(item, true);
+            //   rippledServers.Add(item, true);
             //}
         }
 
@@ -73,6 +76,9 @@ namespace Common.Services
                         await client.ConnectAsync(socketUrl, cTokenSource.Token);
                     }
 
+                    //sent event
+                    _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                     //send request
                     var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                     await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -99,7 +105,10 @@ namespace Common.Services
                             } while (!result.EndOfMessage);
 
                             if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                                 break;
+                            }
 
                             ms.Seek(0, SeekOrigin.Begin);
                             using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -270,7 +279,7 @@ namespace Common.Services
 
             }
 
-            //return voting;
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
         }
 
 
@@ -312,6 +321,8 @@ namespace Common.Services
                     await client.ConnectAsync(socketUrl, cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -338,7 +349,10 @@ namespace Common.Services
                             } while (!result.EndOfMessage);
 
                             if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                                 break;
+                            }
 
                             ms.Seek(0, SeekOrigin.Begin);
                             using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -502,6 +516,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
             return voting;
         }
 
@@ -542,6 +557,8 @@ namespace Common.Services
                     await client.ConnectAsync(socketUrl, cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -568,7 +585,10 @@ namespace Common.Services
                             } while (!result.EndOfMessage);
 
                             if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                                 break;
+                            }
 
                             ms.Seek(0, SeekOrigin.Begin);
                             using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -732,6 +752,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
             return voting;
         }
 
@@ -782,6 +803,7 @@ namespace Common.Services
                     await client.ConnectAsync(socketUrl, cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -810,7 +832,10 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -954,6 +979,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
 
         }
 
@@ -1007,6 +1033,8 @@ namespace Common.Services
                     await client.ConnectAsync(socketUrl, cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -1035,7 +1063,10 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -1181,6 +1212,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
             return votingResults;
 
 
@@ -1232,6 +1264,8 @@ namespace Common.Services
                     await client.ConnectAsync(socketUrl, cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, _options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -1260,7 +1294,10 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -1395,6 +1432,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
 
         }
 
@@ -1464,6 +1502,7 @@ namespace Common.Services
                         //open connection
                         if (clientWebsocket.State != WebSocketState.Open)
                         {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             bool retryConnect = true;
                             while (retryConnect)
                             {
@@ -1480,6 +1519,8 @@ namespace Common.Services
                                 }
                             }
                         }
+
+                        _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
 
 
                         //send request                    
@@ -1505,7 +1546,7 @@ namespace Common.Services
 
 
                 }
-               
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                 await Task.Delay(TimeSpan.FromSeconds(15));
                 currentPage++;
             }
@@ -1526,7 +1567,7 @@ namespace Common.Services
         public async Task<List<AccountBalance>> GetVoterBalancesAsync(List<string> Addresses, string PeerAccount, uint LedgerGetBalanceIndex, string Currency, CancellationTokenSource cTokenSource, string socketEndpoint)
         {
 
-            
+            List<AccountBalance> acountBalanceResult = new();
 
             //var voteRegistrations = new List<VoterAccountBalance>();
             var options = new JsonSerializerOptions()
@@ -1562,7 +1603,8 @@ namespace Common.Services
                         //open connection
                         if (clientWebsocket.State != WebSocketState.Open)
                         {
-                            bool retryConnect = true;
+                        _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
+                        bool retryConnect = true;
                             while (retryConnect)
                             {
                                
@@ -1579,9 +1621,11 @@ namespace Common.Services
                             }
                         }
 
+                    _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
 
-                        //send request                    
-                        await SendWebSocketRequest(clientWebsocket, JsonSerializer.Serialize(xrplRequest, options), cTokenSource.Token);
+
+                    //send request                    
+                    await SendWebSocketRequest(clientWebsocket, JsonSerializer.Serialize(xrplRequest, options), cTokenSource.Token);
 
 
                     }
@@ -1589,10 +1633,15 @@ namespace Common.Services
                     //Set up receive
                     Dictionary<string, bool> workItems = new Dictionary<string, bool>();
                     Addresses.ForEach(x => workItems[x] = false);
-                    return await ProcessAccountBalanceAsync(clientWebsocket, PeerAccount, LedgerGetBalanceIndex, Currency, workItems, cTokenSource.Token);
-                   
-              
+                    acountBalanceResult = await ProcessAccountBalanceAsync(clientWebsocket, PeerAccount, LedgerGetBalanceIndex, Currency, workItems, cTokenSource.Token);
+
+                    
+
+
             }
+
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
+            return acountBalanceResult;
 
 
         }
@@ -1795,8 +1844,7 @@ namespace Common.Services
                     } while (!result.EndOfMessage);
 
                     if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        Console.WriteLine("Websocket has been closed, exiting");
+                    {                        
                         break;
                     }
                        

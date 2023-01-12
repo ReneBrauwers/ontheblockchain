@@ -10,5 +10,6 @@ namespace Common.Models.Config
     {
         public string Network { get; set; } = "Main";
         public string Server { get; set; } = "wss://xrplcluster.com/";
+        public bool IsConnected { get; set; } = false;
     }
 }

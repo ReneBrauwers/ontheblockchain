@@ -1,7 +1,7 @@
-﻿
-@inject IConfiguration _appConfig
+﻿@inject IConfiguration _appConfig
 @inject CookieManager _cookieManager
 @inject IJSRuntime JS
+@inject RippledServerState _rippledServerState
 <HxNavbar ColorScheme="NavbarColorScheme.Dark" Color="ThemeColor.Dark">
     <HxNavbarBrand>
         <svg width="30px" height="30px" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" aria-hidden="true" class="me-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -16,24 +16,12 @@
             <HxNavLink Href="/votingarchive">Voting archive</HxNavLink>
             <HxNavLink Href="/accountinfo">Account info</HxNavLink>
             <HxNavLink Href="/orderbook">Order books</HxNavLink>
-        </HxNav>      
+        </HxNav>
         <a href="/settings" class="btn btn-primary btn-sm me-3">Settings</a>
-        
+ 
+
     </HxNavbarCollapse>
 </HxNavbar>
 
-@code {
-    private string query = String.Empty;
-    RippledServer _rippledServer = new();
 
-    public List<string> availableRippledServers = new();
-    private string _activeRippledServer = string.Empty;
-    private string _activeRippleNetwork = string.Empty;
-    private string selectedRippledServer = string.Empty;
-    protected override async Task OnInitializedAsync()
-    {
-        _rippledServer = await _cookieManager.GetRippledServer();
-        
-    }   
 
-}

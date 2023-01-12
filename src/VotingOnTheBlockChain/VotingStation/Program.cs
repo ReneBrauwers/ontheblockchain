@@ -6,6 +6,8 @@ using Havit.Blazor.Components.Web.Bootstrap;
 using Blazored.LocalStorage;
 using Common.Services;
 using Blazor.Analytics;
+using static Common.Extensions.Enums;
+using Common.Handlers;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -23,6 +25,7 @@ builder.Services.AddScoped<AccountInfoManager>();
 builder.Services.AddScoped<OrderBookManager>();
 builder.Services.AddScoped<LedgerManager>();
 builder.Services.AddScoped<CookieManager>();
+builder.Services.AddScoped<RippledServerState>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 SetHxComponents(); 
 await builder.Build().RunAsync();

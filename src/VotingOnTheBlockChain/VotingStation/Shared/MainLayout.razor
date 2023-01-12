@@ -1,10 +1,14 @@
 ﻿@inherits LayoutComponentBase
-<HxMessenger Position="ToastContainerPosition.BottomEnd" />
+
 <div class="page">
     <header>
         <Navbar />
     </header>
-     <main>
+     <main>        
         @Body
     </main>
+<footer class="footer mt-auto py-3 fixed-bottom">
+	<FooterWithStatus/>
+        <HxMessenger Position="ToastContainerPosition.BottomEnd" />
+</footer>
 </div>
