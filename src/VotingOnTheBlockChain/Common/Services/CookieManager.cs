@@ -31,7 +31,8 @@ namespace Common.Services
             var _activeRippleNetwork = await _JS.InvokeAsync<string>("getCookie", "rippledNetwork");
             var _activeRippledServer = await _JS.InvokeAsync<string>("getCookie", "rippledServer");
 
-            if (string.IsNullOrWhiteSpace(_activeRippleNetwork) || string.IsNullOrWhiteSpace(_activeRippledServer))
+            
+            if (string.IsNullOrWhiteSpace(_activeRippleNetwork) || string.IsNullOrWhiteSpace(_activeRippledServer) || _activeRippledServer == "null" || _activeRippleNetwork == "null")
             {
                 var availableRippledServers = _appConfig.GetValue<string>("rippledServersMain")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 _activeRippleNetwork = "Main";
@@ -43,7 +44,8 @@ namespace Common.Services
             return new RippledServer()
             {
                 Server = _activeRippledServer,
-                Network = _activeRippleNetwork
+                Network = _activeRippleNetwork,
+                IsConnected = false
             };
 
         }
