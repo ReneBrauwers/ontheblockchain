@@ -150,7 +150,7 @@ else
         _rippledServer = await _cookieManager.GetRippledServer();
 
 
-        _appConfig.GetValue<string>("rippledServers:Main")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        _appConfig.GetValue<string>("rippledServersMain")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
         {
             _networkServers.Add(new RippledServer()
                 {
@@ -159,7 +159,7 @@ else
                 });
         });
 
-        _appConfig.GetValue<string>("rippledServers:Test")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        _appConfig.GetValue<string>("rippledServersTest")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
         {
             _networkServers.Add(new RippledServer()
                 {
@@ -168,7 +168,7 @@ else
                 });
         });
 
-        _appConfig.GetValue<string>("rippledServers:Dev")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
+        _appConfig.GetValue<string>("rippledServersDev")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList().ForEach(x =>
         {
             _networkServers.Add(new RippledServer()
                 {

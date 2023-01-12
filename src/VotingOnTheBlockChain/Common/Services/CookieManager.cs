@@ -33,7 +33,7 @@ namespace Common.Services
 
             if (string.IsNullOrWhiteSpace(_activeRippleNetwork) || string.IsNullOrWhiteSpace(_activeRippledServer))
             {
-                var availableRippledServers = _appConfig.GetValue<string>("rippledServers:Main")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var availableRippledServers = _appConfig.GetValue<string>("rippledServersMain")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 _activeRippleNetwork = "Main";
                 _activeRippledServer = availableRippledServers?[0];
                 await _JS.InvokeVoidAsync("setCookie", "rippledNetwork", _activeRippleNetwork, 365);
