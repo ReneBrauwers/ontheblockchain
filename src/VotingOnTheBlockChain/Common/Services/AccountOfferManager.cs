@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Handlers;
 using Common.Models.Account;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -18,8 +19,15 @@ namespace Common.Services
 
         private string _holderAccount { get; set; } = string.Empty; //Account to lookup the orders for
         private Uri _websocketServer { get; set; } = new Uri("https://localhost");
+        private string _socketEndpoint { get; set;} = string.Empty;
         private int _ledgerIndex { get; set; } = 0;
 
+        private RippledServerState _rippledServerState { get; set; }
+
+        public AccountOfferManager(RippledServerState rippledServerState)
+        {
+            _rippledServerState = rippledServerState;
+        }
 
         /// <summary>
         /// Operation which will retrieve account offer information
@@ -33,13 +41,14 @@ namespace Common.Services
         {
             _holderAccount = account;
             _websocketServer = new Uri(socketEndpoint);
+            _socketEndpoint = socketEndpoint;
             _ledgerIndex = ledgerIndex;
             return await RetrieveAccountOffers(cTokenSource.Token);
         }
 
         private async Task<List<AccountOffers>> RetrieveAccountOffers(CancellationToken token)
         {
-
+            var results = new List<AccountOffers>();
             using (var clientWebsocket = new ClientWebSocket())
             {
 
@@ -53,14 +62,17 @@ namespace Common.Services
                 }
 
                 await clientWebsocket.ConnectAsync(_websocketServer, token);
+                //sent event
+                _rippledServerState.UpdateServerConnectionState(_socketEndpoint, true);
                 await SendWebSocketRequest(clientWebsocket, JsonSerializer.Serialize(xrplRequest), token);
 
                 //Set up receive
-                var results = await ProcessAccountOrders(clientWebsocket, xrplRequest,token);
+                results = await ProcessAccountOrders(clientWebsocket, xrplRequest,token);
 
-                return results;
+               
             }
-
+            _rippledServerState.UpdateServerConnectionState(_socketEndpoint, false);
+            return results;
 
 
         }
@@ -205,7 +217,7 @@ namespace Common.Services
                                         entry.OutAmount = decimal.Parse(x.GetProperty("taker_gets").GetString(), System.Globalization.NumberStyles.Float) / 1000000;
                                         entry.OutCurrency = "XRP";
                                         entry.ExchangeRateVal = entry.InAmount / entry.OutAmount;
-                                        entry.ExchangeRate = $"{entry.OutCurrency}/{entry.InCurrency}";
+                                        entry.ExchangeRate = $"{entry.InCurrency}/{entry.OutCurrency}";
                                     }
                                     else //taker_pays XRP and sells taker_gets; thus account is * selling a token and receiving XRP
                                     {
@@ -224,73 +236,7 @@ namespace Common.Services
                                     {
                                         orderBookEntries.Add(entry);
                                     }
-
-                                   // entry.Side = orderType;
-
-
-                                    //if (x.TryGetProperty("taker_gets", out var sellObject))
-                                    //{
-                                    //    if (sellObject.ValueKind == JsonValueKind.String)
-                                    //    {
-                                    //        //it's a buy
-                                    //        orderType = OrderType.Buy;
-
-                                    //    }
-                                    //    else
-                                    //    {
-                                    //        //it's a sell
-                                    //        orderType = OrderType.Sell;
-                                    //    }
-                                    //}
-
-                                    //try
-                                    //{
-                                    //    switch (orderType)
-                                    //    {
-                                    //        case OrderType.Buy:
-                                    //            {
-                                    //                var buyEntry = new AccountOrderBook();
-                                    //                buyEntry.Account = jsonResult.RootElement.GetProperty("account").GetString();
-                                    //                buyEntry.BuyCurrency = x.GetProperty("taker_pays").GetProperty("currency").GetString().HexToString();
-                                    //                buyEntry.SellCurrency = "XRP";
-                                    //                buyEntry.Issuer = x.GetProperty("taker_pays").GetProperty("issuer").GetString().HexToString();
-                                    //                buyEntry.Volume = decimal.Parse(x.GetProperty("taker_pays").GetProperty("value").GetString(), System.Globalization.NumberStyles.Float);
-                                    //                buyEntry.Side = OrderType.Buy;
-                                    //                buyEntry.Total = (decimal.Parse(x.GetProperty("taker_gets").GetString(), System.Globalization.NumberStyles.Float) / 1000000);
-                                    //                buyEntry.Price = (buyEntry.Total / buyEntry.Volume);
-                                    //                buyEntry.OrderSummary = string.Concat("buying ", buyEntry.Volume.ToString("N2"), " ", buyEntry.Currency, " costing ", buyEntry.Total.ToString("N2"), " XRP");
-                                    //                orderBookEntries.Add(buyEntry);
-                                    //                break;
-                                    //            }
-                                    //        case OrderType.Sell:
-                                    //            {
-                                    //                var sellEntry = new AccountOrderBook();  
-                                    //                sellEntry.Side = OrderType.Sell;
-                                    //                sellEntry.BuyCurrency = "XRP";
-                                    //                sellEntry.SellCurrency = x.GetProperty("taker_gets").GetProperty("currency").GetString().HexToString();
-
-                                    //                sellEntry.Total = (decimal.Parse(x.GetProperty("taker_pays").GetString(), System.Globalization.NumberStyles.Float) / 1000000);
-                                    //                sellEntry.Price = (decimal.Parse(x.GetProperty("quality").GetString(), System.Globalization.NumberStyles.Float) / 1000000);
-                                    //                sellEntry.OrderSummary = string.Concat("selling ", sellEntry.Volume.ToString("N2"), " ", sellEntry.SellCurrency, " receiving ", sellEntry.Total.ToString("N2"), " ", sellEntry.BuyCurrency);
-                                    //                orderBookEntries.Add(sellEntry);
-                                    //                break;
-                                    //            }
-
-
-                                    //    }
-                                    //}
-                                    //catch(Exception ex)
-                                    //{
-                                    //    Console.WriteLine(orderType.ToString());
-                                    //    Console.WriteLine(string.Concat("taker_gets value: ", x.GetProperty("taker_gets").GetProperty("value")));
-                                    //    Console.WriteLine(string.Concat("currency value: ", x.GetProperty("taker_gets").GetProperty("currency").GetString().HexToString()));
-                                    //    Console.WriteLine(string.Concat("taker_pays: ", x.GetProperty("taker_pays")));
-
-                                       
-                                    //    Console.WriteLine(ex.Message);
- 
-                                    //}
-                                    //await result = ExtractTransactionPayload(x.GetProperty("tx"), ledgerIndexMax); //indicates the current ledger_index at the moment of getting this data back
+                  
                                     return true;
                                 }).ToList();
 

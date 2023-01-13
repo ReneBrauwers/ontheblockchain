@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Handlers;
 using Common.Models.Ledger;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,13 @@ namespace Common.Services
 {
     public sealed class LedgerManager
     {
+         
+        private RippledServerState _rippledServerState { get; set; }
 
+        public LedgerManager(RippledServerState rippledServerState)
+        {
+            _rippledServerState= rippledServerState;
+        }
 
         /// <summary>
         /// Operation which will retrieve the last closed ledger index
@@ -38,6 +45,7 @@ namespace Common.Services
             using (var client = new ClientWebSocket())
             {
                 await client.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
+ 
 
                 //create request
                 dynamic xrplRequest = new ExpandoObject();
@@ -58,6 +66,9 @@ namespace Common.Services
                 {
                     await client.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
                 }
+
+                //sent event
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
 
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, options);
@@ -80,7 +91,11 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            //sent event
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -134,7 +149,7 @@ namespace Common.Services
                
 
             }
-
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
             return ledger;
         }
 
@@ -182,6 +197,8 @@ namespace Common.Services
                     await client.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -203,7 +220,10 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -258,6 +278,7 @@ namespace Common.Services
 
             }
 
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
             return ledger;
         }
 
@@ -322,6 +343,8 @@ namespace Common.Services
                     await client.ConnectAsync(new Uri(socketEndpoint), cTokenSource.Token);
                 }
 
+                _rippledServerState.UpdateServerConnectionState(socketEndpoint, true);
+
                 //send request
                 var requestData = System.Text.Json.JsonSerializer.Serialize(xrplRequest, options);
                 await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(requestData)), WebSocketMessageType.Text, true, cTokenSource.Token);
@@ -347,7 +370,10 @@ namespace Common.Services
                         } while (!result.EndOfMessage);
 
                         if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
                             break;
+                        }
 
                         ms.Seek(0, SeekOrigin.Begin);
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
@@ -454,9 +480,12 @@ namespace Common.Services
                     }
                 }
 
-                return ledger;
+               
 
             }
+
+            _rippledServerState.UpdateServerConnectionState(socketEndpoint, false);
+            return ledger;
         }
 
     }

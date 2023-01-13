@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Common.Extensions.Enums;
 
 namespace Common.Handlers
 {
@@ -12,7 +13,7 @@ namespace Common.Handlers
         public RippledServer _rippledServer { get; private set; }
         public event Action? OnChange;
 
-        public void SetRippledServerState(string network, string server)
+        public void SetRippledServerState(RippledNetwork network, string server)
         {
             if(_rippledServer is null)
             {

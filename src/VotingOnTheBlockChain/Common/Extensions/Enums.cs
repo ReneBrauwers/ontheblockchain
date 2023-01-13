@@ -17,6 +17,13 @@ namespace Common.Extensions
             
         }
 
+        public enum RippledNetwork
+        {
+            Main,
+            Test,
+            Dev
+        }
+
           public enum SynchronisationStatus
         {
             New,

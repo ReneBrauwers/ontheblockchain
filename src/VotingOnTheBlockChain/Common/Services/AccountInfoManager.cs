@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Handlers;
 using Common.Models.Account;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -18,8 +19,16 @@ namespace Common.Services
      
         private string _holderAccount { get; set; } = string.Empty; //Account to lookup the orders for
         private Uri _websocketServer { get; set; } = new Uri("https://localhost");
+
         private int _ledgerIndex { get; set; } = 0;
 
+        private string _socketEndpoint { get; set; } = string.Empty;
+        private RippledServerState _rippledServerState { get; set; }
+
+        public AccountInfoManager(RippledServerState rippledServerState)
+        {
+            _rippledServerState = rippledServerState;
+        }
 
         /// <summary>
         /// Operation which will retrieve basic account information
@@ -33,13 +42,14 @@ namespace Common.Services
         {
             _holderAccount = account;
             _websocketServer = new Uri(socketEndpoint);
+            _socketEndpoint = socketEndpoint;
             _ledgerIndex = ledgerIndex;
             var result = await RetrieveAccountInfo(cTokenSource.Token);
             return result;
         }
         private async Task<AccountInformation> RetrieveAccountInfo(CancellationToken token)
         {
-
+            var results = new AccountInformation();
             using (var clientWebsocket = new ClientWebSocket())
             {
 
@@ -55,13 +65,19 @@ namespace Common.Services
                 }
 
                 await clientWebsocket.ConnectAsync(_websocketServer, token);
+                //sent event
+                _rippledServerState.UpdateServerConnectionState(_socketEndpoint, true);
                 await SendWebSocketRequest(clientWebsocket, JsonSerializer.Serialize(xrplRequest), token);
 
                 //Set up receive
-                var results = await ProcessAccountInfo(clientWebsocket, xrplRequest, token);
+                results = await ProcessAccountInfo(clientWebsocket, xrplRequest, token);
 
-                return results;
+               
             }
+
+            //sent event
+            _rippledServerState.UpdateServerConnectionState(_socketEndpoint, false);
+            return results;
 
 
 

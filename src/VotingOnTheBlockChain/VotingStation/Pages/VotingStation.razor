@@ -158,8 +158,7 @@ else
     private string _rippledServer;
     protected override async Task OnInitializedAsync()
     {
-        _projectsConfig = new();
-        await _configManager.ClearLocalStore();
+        _projectsConfig = new();      
         _projectsConfig = await _configManager.GetProjectsConfig();
 
         var rippledServer = await _cookManager.GetRippledServer();

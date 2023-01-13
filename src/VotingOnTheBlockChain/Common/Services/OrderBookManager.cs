@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Handlers;
 using Common.Models.Account;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -22,7 +23,14 @@ namespace Common.Services
         private OrderType _orderBookType { get; set; }
         private Uri _websocketServer { get; set; }
 
- 
+        private string _socketEndpoint { get; set; } = string.Empty;
+        private RippledServerState _rippledServerState { get; set; }
+
+        public OrderBookManager(RippledServerState rippledServerState)
+        {
+            _rippledServerState = rippledServerState;
+        }
+
         /// <summary>
         /// Operation which retrieves the orderbook for a given token
         /// </summary>
@@ -39,6 +47,7 @@ namespace Common.Services
             _currency = currency;
             _orderBookType = orderBookType;
             _websocketServer = new Uri(socketEndpoint);
+            _socketEndpoint= socketEndpoint;
             return await RetrieveOrderBook(orderBookDepth, cTokenSource.Token);
         }
 
@@ -48,7 +57,7 @@ namespace Common.Services
             dynamic takerPays = new ExpandoObject();
 
             dynamic xrplRequest = new ExpandoObject();
-
+            var results = new List<OrderBook>();
 
             switch (_orderBookType)
             {
@@ -78,13 +87,16 @@ namespace Common.Services
                 xrplRequest.taker_pays = takerPays;
 
                 await clientWebsocket.ConnectAsync(_websocketServer, token);
+                _rippledServerState.UpdateServerConnectionState(_socketEndpoint, true);
                 await SendWebSocketRequest(clientWebsocket, JsonSerializer.Serialize(xrplRequest), token);
 
                 //Set up receive
-                var results = await ProcessOrderBook(clientWebsocket, xrplRequest, _orderBookType, token);
+                results = await ProcessOrderBook(clientWebsocket, xrplRequest, _orderBookType, token);
 
-                return results;
+                
             }
+            _rippledServerState.UpdateServerConnectionState(_socketEndpoint, false);
+            return results;
 
 
 

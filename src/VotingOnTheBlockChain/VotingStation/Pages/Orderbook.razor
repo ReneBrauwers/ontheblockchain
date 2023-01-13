@@ -345,7 +345,7 @@
 
     protected async override Task OnInitializedAsync()
     {
-        await _configManager.ClearLocalStore();
+        
         var rippledServer = await _cookieManager.GetRippledServer();
         _rippledServer = rippledServer.Server;
         await Init();

@@ -8,6 +8,7 @@ using Microsoft.JSInterop;
 using System.Data.SqlTypes;
 using System.Net.Http.Json;
 using System.Xml;
+using static Common.Extensions.Enums;
 
 namespace Common.Services
 {
@@ -26,18 +27,21 @@ namespace Common.Services
         }
 
         public async Task<RippledServer> GetRippledServer()
-        {           
-            //get cookies
-            var _activeRippleNetwork = await _JS.InvokeAsync<string>("getCookie", "rippledNetwork");
-            var _activeRippledServer = await _JS.InvokeAsync<string>("getCookie", "rippledServer");
+        {
+            RippledNetwork _activeRippleNetwork = RippledNetwork.Main; //set as default
+            Enum.TryParse<RippledNetwork>(await _JS.InvokeAsync<string>("getCookie", "rippledNetwork"), out _activeRippleNetwork);
 
+            //get cookies
+            
+            var _activeRippledServer = await _JS.InvokeAsync<string>("getCookie", "rippledServer");
+            
             //cookie can have a null string value, so perform a check as well for this.
-            if (string.IsNullOrWhiteSpace(_activeRippleNetwork) || string.IsNullOrWhiteSpace(_activeRippledServer) || _activeRippledServer == "null" || _activeRippleNetwork == "null")
+            if (string.IsNullOrWhiteSpace(_activeRippledServer) || _activeRippledServer == "null" )
             {
-                var availableRippledServers = _appConfig.GetValue<string>("rippledServersMain")?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                _activeRippleNetwork = "Main";
+                var configItemName = string.Concat("rippledServers", _activeRippleNetwork.ToString());
+                var availableRippledServers = _appConfig.GetValue<string>(configItemName)?.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries).ToList();                
                 _activeRippledServer = availableRippledServers?[0];
-                await _JS.InvokeVoidAsync("setCookie", "rippledNetwork", _activeRippleNetwork, 365);
+                await _JS.InvokeVoidAsync("setCookie", "rippledNetwork", _activeRippleNetwork.ToString(), 365);
                 await _JS.InvokeVoidAsync("setCookie", "rippledServer", _activeRippledServer, 365);
 
             }
@@ -52,7 +56,7 @@ namespace Common.Services
 
         public async Task UpdateRippledServer(RippledServer server)
         {
-            await _JS.InvokeVoidAsync("setCookie", "rippledNetwork", server.Network, 365);
+            await _JS.InvokeVoidAsync("setCookie", "rippledNetwork", server.Network.ToString(), 365);
             await _JS.InvokeVoidAsync("setCookie", "rippledServer", server.Server, 365);
         }
     }

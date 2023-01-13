@@ -1,4 +1,5 @@
 ﻿@page "/settings"
+@using static Common.Extensions.Enums;
 @inject IConfiguration _appConfig
 @inject CookieManager _cookieManager
 @inject RippledServerState _rippledServerState
@@ -31,7 +32,7 @@
                             <div class="card-header py-3">
                                 <div class="row">
                                     <div class="col">
-                                        <h4 class="my-0 fw-normal">@network.Key network</h4>
+                                        <h4 class="my-0 fw-normal">@network.Key.ToString() network</h4>
                                     </div>
                                 </div>
                                 <div class="card-body">
@@ -154,7 +155,7 @@ else
         {
             _networkServers.Add(new RippledServer()
                 {
-                    Network = "Main",
+                    Network = RippledNetwork.Main,
                     Server = x
                 });
         });
@@ -163,7 +164,7 @@ else
         {
             _networkServers.Add(new RippledServer()
                 {
-                    Network = "Test",
+                    Network = RippledNetwork.Test,
                     Server = x
                 });
         });
@@ -172,7 +173,7 @@ else
         {
             _networkServers.Add(new RippledServer()
                 {
-                    Network = "Dev",
+                    Network = RippledNetwork.Dev,
                     Server = x
                 });
         });
@@ -189,7 +190,7 @@ else
             _rippledServer = rippledServer;
 
             await _cookieManager.UpdateRippledServer(_rippledServer);
-            Messenger.AddInformation(title: "Success", message: $"Network preference has been updated to {_rippledServer.Server} on the {_rippledServer.Network} network");
+            Messenger.AddInformation(title: "Success", message: $"Network preference has been updated to {_rippledServer.Server} on the {_rippledServer.Network.ToString()} network");
             _rippledServerState.SetRippledServerState(_rippledServer.Network, _rippledServer.Server);
         }
 

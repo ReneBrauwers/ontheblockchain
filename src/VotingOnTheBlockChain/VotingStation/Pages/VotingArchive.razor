@@ -80,7 +80,7 @@
 
 
 @code {
-    
+
     private List<ProjectConfig>? _projectsConfig { get; set; } //= new List<ProjectConfig>();
     private List<Voting> _archivedVotings { get; set; } = new();
     private ProjectConfig _selectedProjectConfig { get; set; } = new();
@@ -91,9 +91,9 @@
 
 
 
-   
 
-    
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -124,6 +124,11 @@
         //retrieve archived entries
         _archivedVotings = await _configManager.GetVotingResultManifest();
 
+        if (_archivedVotings is null)
+        {
+            _archivedVotings = new();
+            return;
+        }
         //augment votings with project config data
         _archivedVotings.ForEach(x =>
         {
