@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Common.Models.Config
 {
 
@@ -28,6 +29,9 @@ namespace Common.Models.Config
         public string VotingAccount { get; set; }
 
         public uint LedgerVotingStartIndex { get; set; }
+
+        public bool CanIncludeVotingFee { get; set; }
+        public string VotingModel { get; set; }
 
     }
 

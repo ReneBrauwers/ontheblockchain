@@ -24,6 +24,12 @@ namespace Common.Extensions
             Dev
         }
 
+        public enum VotingModel
+        {
+            Default,
+            PopularOnly
+        }
+
           public enum SynchronisationStatus
         {
             New,

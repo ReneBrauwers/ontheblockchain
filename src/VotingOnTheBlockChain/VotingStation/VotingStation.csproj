@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Pages\VotingStation.razor~RF895afaa.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Blazor-Analytics" Version="3.11.0" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.3.0" />
     <PackageReference Include="Havit.Blazor.Components.Web.Bootstrap" Version="3.2.5" />
