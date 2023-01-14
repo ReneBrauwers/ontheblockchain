@@ -49,6 +49,20 @@
         </div>
     </div>
 </section>
+
+    <HxModal @ref="redirectionNotice" Title="Redirecting" Centered="true" Size="ModalSize.ExtraLarge">
+        <BodyTemplate>            
+                <div class="container">
+                    <div style="display:grid;place-items:center">
+                        <span class="loader">Redirecting to vote processor, please hold on.</span>
+                    </div>
+                </div>
+                 
+            </BodyTemplate>
+    </HxModal>
+
+
+
 @if (!_latestVotingFetched)
 {
     <div class="album py-5 bg-light">
@@ -201,6 +215,7 @@ else
     private string _signingMethod { get; set; } = "xumm";
     private string _rippledServer;
     private int _votingFee = 5;
+    private HxModal redirectionNotice;
     protected override async Task OnInitializedAsync()
     {
         _projectsConfig = new();
@@ -259,9 +274,9 @@ else
         return isSuccess;
     }
 
-    private async Task CastVote(Voting voteInfo, string votedOn, bool useVotingFee=false)
+    private async Task CastVote(Voting voteInfo, string votedOn, bool useVotingFee = false)
     {
-
+        
         var votingId = voteInfo.VotingId;
         var voteCastOn = votedOn.StringToHex();
         var destination = voteInfo.VotingAccount;
@@ -278,42 +293,79 @@ else
         {
             case "ledger":
                 {
-                    var ep = _appConfig.GetValue<string>("ledgerApiEndPoint");
-                    votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
-                    await JS.InvokeVoidAsync("redirectExternal", votingEndpoint, "_blank");
+                    await CastVoteUsingLedgerNano(votingId, voteCastOn, destination, amount, fee);
+                    //var ep = _appConfig.GetValue<string>("ledgerApiEndPoint");
+                    //votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
+                    //await redirectionNotice.HideAsync();
+                    //await JS.InvokeVoidAsync("redirectExternal", votingEndpoint, "_blank");
                     break;
                 }
             case "xumm":
                 {
+                    await redirectionNotice.ShowAsync();
+                    await CastVoteUsingXumm(votingId, voteCastOn, destination, amount, fee);
+                    await redirectionNotice.HideAsync();
+                    //var ep = _appConfig.GetValue<string>("xummApiEndPoint");
+                    //Response? xummResponse;
+                    //votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
+                    ////votingEndpoint = $"https://xummapp.free.beeceptor.com?id={votingId}&vote={voteCastOn}&dest={destination}";
+                    //using (var localClient = new HttpClient())
+                    //{
+                    //    var request = new HttpRequestMessage(HttpMethod.Get, votingEndpoint);
+                    //    request.SetBrowserRequestMode(BrowserRequestMode.Cors);
+                    //    // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
 
-                    var ep = _appConfig.GetValue<string>("xummApiEndPoint");
-                    votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
-                    //votingEndpoint = $"https://xummapp.free.beeceptor.com?id={votingId}&vote={voteCastOn}&dest={destination}";
-                    using (var localClient = new HttpClient())
-                    {
-                        var request = new HttpRequestMessage(HttpMethod.Get, votingEndpoint);
-                        request.SetBrowserRequestMode(BrowserRequestMode.Cors);
-                        // request.SetBrowserRequestCache(BrowserRequestCache.NoStore); //optional
+                    //    var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                    //    //if (response.IsSuccessStatusCode)
+                    //    //{
+                    //    //var content = await response.Content.ReadAsStringAsync();
+                    //    xummResponse = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                    //    //}
+                    //}
 
-                        var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                        //if (response.IsSuccessStatusCode)
-                        //{
-                        //var content = await response.Content.ReadAsStringAsync();
-                        var content = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-                        Console.WriteLine(content.next.always);
-                        await JS.InvokeVoidAsync("redirectExternal", content.next.always, "_blank");
-                        //}
-                    }
-
+                    ////redirect
+                    //await redirectionNotice.HideAsync();
+                    //await JS.InvokeVoidAsync("redirectExternal", xummResponse?.next.always, "_blank");
                     break;
                 }
             default:
                 {
+                   
                     break;
                 }
         }
 
+       
     }
+
+
+    private async Task CastVoteUsingXumm(string votingId, string voteCastOn, string destination, string amount, string fee)
+    {
+        string votingEndpoint = string.Empty;
+        var ep = _appConfig.GetValue<string>("xummApiEndPoint");
+        Response? xummResponse;
+        votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
+
+        using (var localClient = new HttpClient())
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, votingEndpoint);
+            request.SetBrowserRequestMode(BrowserRequestMode.Cors);           
+            var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            xummResponse = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+        }
+
+        await JS.InvokeVoidAsync("redirectExternal", xummResponse?.next.always, "_blank");
+    }
+
+    private async Task CastVoteUsingLedgerNano(string votingId, string voteCastOn, string destination, string amount, string fee)
+    {
+        string votingEndpoint = string.Empty;
+        var ep = _appConfig.GetValue<string>("ledgerApiEndPoint");
+        votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";      
+        await JS.InvokeVoidAsync("redirectExternal", votingEndpoint, "_blank");
+
+    }
+
 
     private void SetSigningMethod(ChangeEventArgs val)
     {
@@ -335,3 +387,6 @@ else
         _navManager.NavigateTo($"{redirectPage}?{queryParams}");
     }
 }
+
+
+    

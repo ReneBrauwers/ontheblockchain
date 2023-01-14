@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingScanner", "VotingScan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VotingResultsProcessor", "VotingResultsProcessor\VotingResultsProcessor.csproj", "{DEC463CF-FFC8-48BC-870A-6517266D30A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VotingCommission", "VotingCommission\VotingCommission.csproj", "{5F774F2E-1A43-46C3-95D5-1BD3B3ACDFAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{DEC463CF-FFC8-48BC-870A-6517266D30A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEC463CF-FFC8-48BC-870A-6517266D30A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEC463CF-FFC8-48BC-870A-6517266D30A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F774F2E-1A43-46C3-95D5-1BD3B3ACDFAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F774F2E-1A43-46C3-95D5-1BD3B3ACDFAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F774F2E-1A43-46C3-95D5-1BD3B3ACDFAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F774F2E-1A43-46C3-95D5-1BD3B3ACDFAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
