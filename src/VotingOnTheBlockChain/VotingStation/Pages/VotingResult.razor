@@ -367,10 +367,14 @@
         projectConfig.VotingAccount = votingAccount;
         projectConfig.LedgerVotingStartIndex = (UInt32)votingStartIndex;
 
+        var projectConfigList= new List<ProjectConfig>();
+        projectConfigList.Add(projectConfig);
+
         Voting result;
         if (_isLive)
         {
-            result = await _votingManager.GetLastVoting(projectConfig, ctx,_rippledServer);
+            var results = await _votingManager.GetLastVoting(projectConfigList, ctx, _rippledServer);
+            result = results.First();
         }
         else
         {
