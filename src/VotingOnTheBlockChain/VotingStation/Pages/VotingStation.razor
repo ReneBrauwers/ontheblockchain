@@ -131,7 +131,7 @@ else
 
                                                 }
 
-                                                @if (inCtxProject.CanIncludeVotingFee)
+                                                @if (inCtxProject.CanIncludeVotingFee && voting.IsLive)
                                                 {
                                                     <HxTooltip Text="Voting might come with an additional fee.">
                                                         <button type="button" class="btn btn-sm btn-outline-danger ms-1">
