@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Common.Models.Xumm
 {
  
-    public class Response
+    public class PaymentResponse
     {
         public string uuid { get; set; }
         public Next next { get; set; }

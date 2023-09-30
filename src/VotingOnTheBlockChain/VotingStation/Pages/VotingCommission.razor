@@ -17,99 +17,109 @@
         </div>
     </div>
 </section>
-    <div class="album py-5 bg-light">
-        <div class="container">
-            <div class="row mb-3">
-                
-                    <div class="col me-3 mb-3">
-                        <div class="card rounded-3 shadow-sm">
-                            <div class="card-header py-3">
-                                <div class="row">
-                                    <div class="col">
-                                        <h4 class="my-0 fw-normal">Voting announcement cration form</h4>                                  
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">                                    
-                                        <h5 class="my-0 fw-normal">Instructions</h5>
-                                        Use the below mentioned form for scheduling your next voting campaign. See bullets below on high-level instructions:
-                                        <ul>
-                                            <li>Organisation ID: Issuer account, or main xrpl account used to identify the voting organiser.</li>
-                                            <li>Trustline required: If set to yes it will require voters to own a specific token in order to be elligable to vote</li>
-                                            <li>Topic: Title indicating what the voting is about.</li>
-                                            <li>Options: A list of options to vote on.</li>
-                                            <li>Fees: If a value is assigned it indicates the amount in XRP that will be charged in order to cast a vote; default is 0</li>
-                                            <li>
-                                                Voting Model: Indicates the type of voting and voting rules to apply. Currently the following models are supported:
-                                                <ul>
-                                                    <li>holder amount: indicates that owning 1 token equals 1 vote, last vote cast counts, and total votes = amount owned at concludeDateTime</li>
-                                                    <li>election: indicates only one vote allowed; renders a vote invalid in case a user votes again </li>
-                                                </ul>
-                                            </li>
-                                            <li>Start: Start date/time for vote (in UTC)</li>
-                                            <li>End: End date/time for vote Pin UTC)</li>
-                                        </ul>
-                                        Once the voting has been defined, the voting can be announced. This is done by means of submitting the form which subsequently will schedule the vote for the given start date/time.
-                                        <h5 class="my-0 fw-normal">Commence</h5>
-                                        A voting will automagicaclly commence based on the start date/time supplied. Once commenced, the voting officially starts.
-                                        <h5 class="my-0 fw-normal">Conclude</h5>
-                                        A voting will automagicaclly concludes based on the end date/time supplied. Once the end date/time is reached the voting will be officially ended.
-                                        <h5 class="my-0 fw-normal">Report</h5>
-                                        After the voting has been concluded a report of the results will be generated and made available.
-                                    
-                                </div>
-                                    <div class="row">
-<form>
-    <div class="form-group">
-        <label for="uid">UID</label>
-        <input @bind="uid" class="form-control" id="uid" placeholder="Enter UID" />
-    </div>
-    <div class="form-group">
-        <label for="organisationId">Organisation ID</label>
-        <input @bind="organisationId" class="form-control" id="organisationId" placeholder="Enter Organisation ID" />
-    </div>
-    <div class="form-group">
-        <label for="votingAccountId">Voting Account ID</label>
-        <input @bind="votingAccountId" class="form-control" id="votingAccountId" placeholder="Enter Voting Account ID" />
-    </div>
-    <div class="form-group">
-        <label for="trustlineRequired">Trustline Required</label>
-        <input @bind="trustlineRequired" type="checkbox" class="form-control" id="trustlineRequired" />
-    </div>
-    <div class="form-group">
-        <label for="topic">Topic</label>
-        <input @bind="topic" class="form-control" id="topic" placeholder="Enter Topic" />
-    </div>
-    <div class="form-group">
-        <label for="fees">Fees</label>
-        <input @bind="fees" type="number" class="form-control" id="fees" placeholder="Enter Fees" />
-    </div>
-    <div class="form-group">
-        <label for="model">Model</label>
-        <input @bind="model" class="form-control" id="model" placeholder="Enter Model" />
-    </div>
-    <div class="form-group">
-        <label for="commenceDateTimePlanned">Commence Date and Time Planned</label>
-        <input @bind="commenceDateTimePlanned" type="datetime-local" class="form-control" id="commenceDateTimePlanned" />
-    </div>
-    <div class="form-group">
-        <label for="concludeDateTimePlanned">Conclude Date and Time Planned</label>
-        <input @bind="concludeDateTimePlanned" type="datetime-local" class="form-control" id="concludeDateTimePlanned" />
-    </div>
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
-                                    </div>
-                              
-                               
+<div class="album py-5 bg-light">
+    <div class="container">
+        <div class="row mb-3">
 
-                                </div>
+            <div class="col me-3 mb-3">
+                <div class="card rounded-3 shadow-sm">
+                    <div class="card-header py-3">
+                        <div class="row">
+                            <div class="col">
+                                <h4 class="my-0 fw-normal">Voting announcement cration form</h4>
                             </div>
                         </div>
+                        <div class="card-body">
+                            @*    <div class="row">
+                            <h5 class="my-0 fw-normal">Instructions</h5>
+                            Use the below mentioned form for scheduling your next voting campaign. See bullets below on high-level instructions:
+                            <ul>
+                            <li>Organisation ID: Issuer account, or main xrpl account used to identify the voting organiser.</li>
+                            <li>Trustline required: If set to yes it will require voters to own a specific token in order to be elligable to vote</li>
+                            <li>Topic: Title indicating what the voting is about.</li>
+                            <li>Options: A list of options to vote on.</li>
+                            <li>Fees: If a value is assigned it indicates the amount in XRP that will be charged in order to cast a vote; default is 0</li>
+                            <li>
+                            Voting Model: Indicates the type of voting and voting rules to apply. Currently the following models are supported:
+                            <ul>
+                            <li>holder amount: indicates that owning 1 token equals 1 vote, last vote cast counts, and total votes = amount owned at concludeDateTime</li>
+                            <li>election: indicates only one vote allowed; renders a vote invalid in case a user votes again </li>
+                            </ul>
+                            </li>
+                            <li>Start: Start date/time for vote (in UTC)</li>
+                            <li>End: End date/time for vote Pin UTC)</li>
+                            </ul>
+                            Once the voting has been defined, the voting can be announced. This is done by means of submitting the form which subsequently will schedule the vote for the given start date/time.
+                            <h5 class="my-0 fw-normal">Commence</h5>
+                            A voting will automagicaclly commence based on the start date/time supplied. Once commenced, the voting officially starts.
+                            <h5 class="my-0 fw-normal">Conclude</h5>
+                            A voting will automagicaclly concludes based on the end date/time supplied. Once the end date/time is reached the voting will be officially ended.
+                            <h5 class="my-0 fw-normal">Report</h5>
+                            After the voting has been concluded a report of the results will be generated and made available.
+
+                            </div>*@
+                            <div class="row">
+                                <form class="form-floating">
+                                    <div class="form-group">
+                                        <label for="uid">UID</label>
+                                        <input @bind="uid" class="form-control" id="uid" placeholder="Enter UID" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="organisationId">Organisation ID</label>
+                                        <input @bind="organisationId" class="form-control" id="organisationId" placeholder="Enter Organisation ID" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="votingAccountId">Voting Account ID</label>
+                                        <input @bind="votingAccountId" class="form-control" id="votingAccountId" placeholder="Enter Voting Account ID" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="trustlineRequired">Trustline Required</label>
+                                        <input @bind="trustlineRequired" type="checkbox" class="form-control" id="trustlineRequired" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="topic">Topic</label>
+                                        <input @bind="topic" class="form-control" id="topic" placeholder="Enter Topic" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fees">Fees</label>
+                                        <input @bind="fees" type="number" class="form-control" id="fees" placeholder="Enter Fees" />
+                                    </div>
+                                    <div class="form-group">
+                                        <select class="form-select" id="model" aria-label="Floating label select example" @bind="model">
+                                            <option value="holder">holder</option>
+                                            <option value="selection">election</option>
+                                        </select>
+                                        <label for="floatingSelect">Voting model</label>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="commenceDateTimePlanned">Commence Date and Time Planned</label>
+                                        <input @bind="commenceDateTimePlanned" type="datetime-local" class="form-control" id="commenceDateTimePlanned" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="concludeDateTimePlanned">Conclude Date and Time Planned</label>
+                                        <input @bind="concludeDateTimePlanned" type="datetime-local" class="form-control" id="concludeDateTimePlanned" />
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                                        <label class="form-check-label" for="flexCheckDefault">
+                                            I agree to the @_votingCreationRate XRP per voting.
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit</button>
+                                </form>
+                            </div>
+
+
+
+                        </div>
                     </div>
-                
+                </div>
             </div>
+
         </div>
     </div>
+</div>
 
 @code {
     [Inject] protected IHxMessengerService Messenger { get; set; }
@@ -121,16 +131,17 @@
 
     //archival sync settings
 
-        private string uid;
-        private string organisationId;
-        private string votingAccountId;
-        private bool trustlineRequired;
-        private string topic;
-        private int fees;
-        private string model;
-        private DateTime commenceDateTimePlanned;
-        private DateTime concludeDateTimePlanned;
- 
+    private string uid;
+    private string organisationId;
+    private string votingAccountId;
+    private bool trustlineRequired;
+    private string topic;
+    private int fees;
+    private float _votingCreationRate = 5f;
+    private string model;
+    private DateTime commenceDateTimePlanned;
+    private DateTime concludeDateTimePlanned;
+
 
 
     protected override async Task OnInitializedAsync()
@@ -138,12 +149,12 @@
         _rippledServer = await _cookieManager.GetRippledServer();
 
 
-        
+
 
     }
-   
 
-   
- 
+
+
+
 
 }

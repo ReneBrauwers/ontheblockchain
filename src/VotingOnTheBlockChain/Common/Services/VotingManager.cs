@@ -747,7 +747,7 @@ namespace Common.Services
 
 
                         }
-                        Console.WriteLine($"More pages: {(morePages ? "yes" : "No")}");
+                        //Console.WriteLine($"More pages: {(morePages ? "yes" : "No")}");
                     } while (morePages);
 
 
@@ -2008,7 +2008,7 @@ namespace Common.Services
 
 
                 }
-                Console.WriteLine($"{WorkItems.Where(x => x.Value == false).Count()} workitems remaining");
+               // Console.WriteLine($"{WorkItems.Where(x => x.Value == false).Count()} workitems remaining");
             } while (WorkItems.Where(x => x.Value == false).Count() > 0);
 
             return accountBalances;

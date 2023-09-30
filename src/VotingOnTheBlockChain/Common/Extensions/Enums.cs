@@ -26,9 +26,11 @@ namespace Common.Extensions
 
         public enum VotingModel
         {
-            Default,
-            PopularOnly
+            Standard,
+            ElectionLike
         }
+
+
 
           public enum SynchronisationStatus
         {

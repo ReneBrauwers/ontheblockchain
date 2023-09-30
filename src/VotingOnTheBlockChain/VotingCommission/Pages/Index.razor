@@ -1,9 +1,372 @@
 ﻿@page "/"
+@using Common.Models.Xumm;
+@using Common.Services;
+@using System.Text.Json;
+@using System.Text;
+@inject IConfiguration _appConfig
+@inject IJSRuntime _JS
+@inject HttpClient Http
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Voting Registration</PageTitle>
 
-<h1>Hello, world!</h1>
+     <div class="container">
+        <div class="row py-lg-5 text-center ">
+        <div class="col-md-12">
+            <h1 class="fw-light">Voting Campaign Registration</h1>
+            <p class="lead text-muted">
+                You can use this page to initiate your own voting campaign, this service will be free initially but might charge an initial base fee to cover any hosting costs in the future.
+            </p>
+        </div>
+    </div>
+</div>
 
-Welcome to your new app.
+@if (userHasLoggedIn)
+{
+    <div class="container contact-form" data-bs-theme="light">
+        <div class="contact-image">
+            <img src="/android-chrome-192x192.png" alt="rocket_contact" />
+        </div>
+        <EditForm EditContext="@_editContext" OnSubmit="SubmitAnnouncementRequest">
+            <DataAnnotationsValidator />
+            <ValidationSummary />        
+            <div class="row g-3">
+                <div class="col-md-12" >
+                    <h5 class="text-black">Voting campaign basics</h5>
+                    <hr />
+                </div>
+                <div class="col-md-12">
+                    <div class="form-floating mb-3">
+                        <input type="text" @bind="_votingAnnouncementForm.Organisation" class="form-control" id="organisationId" placeholder="Enter Organisation*" />
+                        <label for="organisationId">Organisation</label>
+                    </div>
+                </div>
+                <div class="col-md-12">             
+                    <div class="form-floating mb-3">
+                        <input @bind="_votingAnnouncementForm.Topic" class="form-control" id="topic" placeholder="Enter Topic" />
+                        <label for="topic">Topic</label>
+                    </div>
+                </div>  
+                <div class="col-md-12">
+                    @for (int i = 1; i <= _numberOfVoteOptions; i++)
+                    {
+                        <div class="form-floating input-group mb-3">
+                            <input class="form-control" id="@string.Concat("option",i)" placeholder="@string.Concat("vote option ",i)" value="@string.Concat("vote option ",i)">
+                            <label for="@string.Concat("option",i)">@string.Concat("vote option ",i)</label>                        
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+                            @if (i > 1)
+                            {
+                                <button class="btn btn-sm btn-outline-danger me-1" type="button" id="button-remove" @onclick="@(()=>RemoveOption(i))">Remove</button>
+                            }
+                            @if (i == _numberOfVoteOptions)
+                            {
+                                <button class="btn btn-sm btn-outline-info" type="button" id="button-add" @onclick="@(()=>AddOption(i))">Add</button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="col-md-12">
+                    <h5 class="text-black mt-5">Rule definition</h5>
+                    <hr />
+                </div>
+
+                <div class="col-md-12">
+                    <div class="form-check mb-3">                   
+                        <input @bind="_votingAnnouncementForm.TrustlineRequired" type="checkbox" class="form-check-input" id="trustlineRequired" />
+                        <label for="trustlineRequired">Trustline Required</label>
+                    </div>
+                </div>
+                @if (_votingAnnouncementForm.TrustlineRequired)
+                {
+                    <div class="col-md-12">
+
+
+                        <div class="form-floating mb-3">
+                            <input @bind="_votingAnnouncementForm.TokenName" type="text" class="form-control" id="tokenName" placeholder="Enter Token name" />
+                            <label for="fees">Token</label>
+                        </div>
+                    </div>
+                }
+                <div class="col-md-12">
+
+
+                    <div class="form-floating mb-3">                 
+                        <input @bind="_votingAnnouncementForm.VotingFeeAmount" type="number" class="form-control" id="fees" placeholder="Enter Fees" />
+                        <label for="fees">Fees</label>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="form-floating mb-3">
+                        <select class="form-select" name="selVotingModel" id="selVotingModel" @bind="_votingAnnouncementForm.Model">
+                            <option value="Standard">Standard</option>
+                            <option value="ElectionLike">Election</option>
+                        </select>
+                        <label for="selVotingModel">Voting model*</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating mb-3">                  
+                        <input @bind="_votingAnnouncementForm.Start" type="datetime-local" class="form-control" id="commenceDateTimePlanned" />
+                        <label for="commenceDateTimePlanned">Planned start date</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating mb-3">
+                        <input @bind="_votingAnnouncementForm.End" type="datetime-local" class="form-control" id="concludeDateTimePlanned" />
+                        <label for="concludeDateTimePlanned">Planned end date</label>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        <label class="form-check-label" for="flexCheckDefault">
+                            I agree to the @_votingCreationRate XRP per voting.
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-12 mb-5">
+                    <button type="submit" class="btn btn-primary float-end">Register voting campaign</button>
+                </div>
+
+
+            </div>
+
+        </EditForm>
+    </div>
+}
+
+
+<HxModal @ref="_xummLogin" Title="Xumm Signin" Centered="true" Size="ModalSize.Regular" Backdrop="ModalBackdrop.Static" OnClosed="ValidateUserSignedIn">
+    <BodyTemplate>
+        <div style="display:grid;place-items:center">
+            @if (xummResponse is null)
+            {
+            <img src="/android-chrome-192x192.png" class="img-fluid rounded mx-auto d-block" alt="Placeholder" />
+            <p>Please press the button below to sign in using Xumm; this is needed to retrieve your main XRPL account.</p>
+            <HxButton Color="ThemeColor.Primary" OnClick="SignIn">Sign in</HxButton>
+       
+            }
+            else
+            {
+                <img src="@xummResponse.refs.qr_png" class="img-fluid rounded mx-auto d-block" alt="Scan image to login" />
+                <p>
+                    Please scan the image to sign in; once you have signed you will be able to create a voting.
+                </p>
+                <HxSpinner Size="SpinnerSize.Small" /> @_sbStatus                
+            }
+       </div>
+  
+
+    </BodyTemplate>
+    <FooterTemplate>
+        <HxButton Color="ThemeColor.Secondary" OnClick="ValidateUserSignedIn">Cancel</HxButton>
+    </FooterTemplate>
+</HxModal>
+
+
+
+
+
+@code {
+    private VotingAnnouncementForm _votingAnnouncementForm = new();
+    private EditContext? _editContext;
+    private int _numberOfVoteOptions = 1;
+    private int _votingCreationRate = 5;
+    private Dictionary<int, string> _voteOptions;
+    private bool userHasLoggedIn = false;
+    private bool userHasRejected = false;
+    private bool showLogin = false;
+    private string _sbStatus;
+    private WebSocketClient _client;
+    PaymentResponse? xummResponse;
+    private HxModal? _xummLogin;
+
+    protected async override void OnInitialized()
+    {
+        _editContext = new(_votingAnnouncementForm);
+
+
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _xummLogin.ShowAsync();
+        }
+    }
+
+
+
+
+    private async Task SignIn()
+    {
+        string votingEndpoint = string.Empty;
+        var ep = _appConfig.GetValue<string>("xummBaseAPI");
+
+        using (var localClient = new HttpClient())
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, string.Concat(ep,"/login"));
+                request.SetBrowserRequestMode(BrowserRequestMode.Cors);
+                var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                xummResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+
+                //await _JS.InvokeVoidAsync("redirectExternal", xummResponse?.next.always, "_blank");
+
+                //Establish a websocket connection
+                if (_client is null)
+                {
+                    _client = new WebSocketClient(new Uri(xummResponse.refs.websocket_status));
+                    _client.OnMessageReceived += HandleMessageReceived;
+                }
+
+                await _client.ConnectAsync();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                await _client.DisconnectAsync();
+
+            }
+        }
+
+
+
+    }
+    private async Task ValidateUserSignedIn()
+    {
+        if(!userHasLoggedIn)
+        {
+            await _JS.InvokeVoidAsync("redirectExternal", "https://xrpl.opinionated.pro", "_self");
+        }
+    }
+  
+    private async Task SubmitAnnouncementRequest()
+    {
+
+        _voteOptions = new Dictionary<int, string>();
+
+        for(int i=1;i<=_numberOfVoteOptions;i++)
+        {
+            var optionValue = await _JS.InvokeAsync<string>("getTextBoxValueById", string.Concat("option", i));
+            if (_voteOptions.ContainsKey(i))
+            {
+                _voteOptions[i] = optionValue;
+            }
+            else
+            {
+                _voteOptions.Add(i, optionValue);
+            }
+        }
+        _editContext = new(_votingAnnouncementForm);
+
+        if(_editContext.Validate())
+        {
+
+        }
+    }
+
+    private async Task GetSignedPayloadDetails(string identifier)
+    {
+        string votingEndpoint = string.Empty;
+        var ep = _appConfig.GetValue<string>("xummBaseAPI");
+        PayloadDetailsResponse? xummResponse;
+
+
+        using (var localClient = new HttpClient())
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, string.Concat(ep, "/", identifier));
+                request.SetBrowserRequestMode(BrowserRequestMode.Cors);
+                var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                xummResponse = await response.Content.ReadFromJsonAsync<PayloadDetailsResponse>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+
+                if(xummResponse.meta.signed)
+                {
+                    _votingAnnouncementForm.Organisation = xummResponse.response.signer;
+                    userHasLoggedIn = true;
+
+                    await DisconnectFromWebSocket();
+                    //close diaglog
+                    await _xummLogin.HideAsync();
+                    StateHasChanged();
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+
+
+            }
+        }
+
+
+    }
+
+
+
+    private void AddOption(int i)
+    {    
+        _numberOfVoteOptions++;
+    }
+
+    private void RemoveOption(int i)
+    {
+        _numberOfVoteOptions--;
+    }
+
+    private void HandleMessageReceived(object sender, string message)
+    {
+        // Do long-running task here
+        _sbStatus = "Waiting on response...";
+        StateHasChanged();
+        JsonDocument response;
+        //try parse to JSON
+        byte[] jsonUtf8 = Encoding.UTF8.GetBytes(message);
+        Utf8JsonReader json = new Utf8JsonReader(jsonUtf8);
+        var isSigned = false;
+        if(JsonDocument.TryParseValue(ref json, out response))
+        {
+            //Try get value, which contains the state
+            if(response.RootElement.TryGetProperty("signed", out JsonElement signedValue))
+            {
+                if(signedValue.GetBoolean())
+                {
+                    //unregister
+                    //_client.OnMessageReceived -= HandleMessageReceived;
+                    Task.Run(() => GetSignedPayloadDetails(response.RootElement.GetProperty("payload_uuidv4").GetString()));
+
+                }
+                else
+                {
+                    _sbStatus = "Sign in cancelled.";
+                    StateHasChanged();
+                    Task.Run(() => DisconnectFromWebSocket());
+
+                }
+            }
+        }
+
+        
+       
+    }
+
+    private async Task DisconnectFromWebSocket()
+    {
+        if (_client is not null)
+        {
+            _client.OnMessageReceived -= HandleMessageReceived;
+            _client.DisconnectAsync();
+        }
+    }
+
+
+
+    
+
+}

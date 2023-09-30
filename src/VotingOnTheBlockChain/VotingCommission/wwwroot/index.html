@@ -1,15 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>VotingCommission</title>
+    <meta name="description" content="voting on the XRPL">
+    <meta name="author" content="Rene Brauwers">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <title>Voting on the XRPL</title>
     <base href="/" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Default values for additional CSS Variables (+ import Bootstrap Icons) -->
+    <link href="_content/Havit.Blazor.Components.Web.Bootstrap/defaults.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="VotingCommission.styles.css" rel="stylesheet" />
+
+    <link href="VotingCommission.styles.css" rel="stylesheet">
+
 </head>
 
 <body>
@@ -27,6 +37,9 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/custom_utils.js"></script>
+
 </body>
 
 </html>

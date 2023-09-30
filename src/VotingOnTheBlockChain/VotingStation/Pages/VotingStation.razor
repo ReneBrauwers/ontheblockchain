@@ -99,17 +99,16 @@ else
                                     <div class="row-mb-3">
                                         <div class="col">
                                             <div class="col d-flex" style="display: inline-block; margin-right: 0.5rem;">
-                                                @if (inCtxProject.VotingModel == Enums.VotingModel.PopularOnly.ToString())
+                                                @if (inCtxProject.VotingModel == Enums.VotingModel.Standard.ToString())
                                                 {
-                                                    <HxTooltip Text="If you hold tokens you can cast one (1) vote">
-                                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1">popular voting</button>
-                                                    </HxTooltip>
-
+                                                    <HxTooltip Text="Standard voting, which means that you cast votes based on the amount of takens you hold">
+                                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1">@Enums.VotingModel.Standard.ToString()</button>
+                                                    </HxTooltip>                                                 
                                                 }
                                                 else
                                                 {
-                                                    <HxTooltip Text="Weighted voting, which means that you cast votes based on the amount of takens you hold">
-                                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1">weighted voting</button>
+                                                    <HxTooltip Text="Election like voting, which means if you hold tokens you can cast one (1) vote; and you'r vote is automatically invalidated if you vote multiple times'">
+                                                        <button type="button" class="btn btn-sm btn-outline-dark ms-1">@Enums.VotingModel.Standard.ToString()</button>
                                                     </HxTooltip>
 
                                                 }
@@ -358,7 +357,7 @@ else
     {
         string votingEndpoint = string.Empty;
         var ep = _appConfig.GetValue<string>("xummApiEndPoint");
-        Response? xummResponse;
+        PaymentResponse? xummResponse;
         votingEndpoint = $"{ep}?id={votingId}&vote={voteCastOn}&dest={destination}&amount={amount}&fee={fee}";
 
         using (var localClient = new HttpClient())
@@ -366,7 +365,7 @@ else
             var request = new HttpRequestMessage(HttpMethod.Get, votingEndpoint);
             request.SetBrowserRequestMode(BrowserRequestMode.Cors);
             var response = await localClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            xummResponse = await response.Content.ReadFromJsonAsync<Response>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            xummResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(new System.Text.Json.JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
 
         await JS.InvokeVoidAsync("redirectExternal", xummResponse?.next.always, "_blank");

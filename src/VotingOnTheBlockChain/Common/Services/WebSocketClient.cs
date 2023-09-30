@@ -57,7 +57,7 @@ namespace Common.Services
         public async Task DisconnectAsync()
         {
             _cts.Cancel();
-            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", _cts.Token);
             OnConnectionStateChanged?.Invoke(this, _webSocket.State);
         }
 
@@ -92,10 +92,16 @@ namespace Common.Services
 
         private async Task ReconnectAsync()
         {
+            if (_cts.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (_isReconnecting)
             {
                 return;
             }
+
             _isReconnecting = true;
             while (_webSocket.State != WebSocketState.Open)
             {
